@@ -253,11 +253,8 @@ public data class StringWithAggregatesFilter(
   public val mode: QueryMode?,
   public val not: String?,
   public val _count: NestedIntFilter?,
-  public val count: NestedIntFilter?,
   public val _min: NestedStringFilter?,
-  public val min: NestedStringFilter?,
-  public val _max: NestedStringFilter?,
-  public val max: NestedStringFilter?
+  public val _max: NestedStringFilter?
 )
 
 public data class EnumDepartmentWithAggregatesFilter(
@@ -266,11 +263,8 @@ public data class EnumDepartmentWithAggregatesFilter(
   public val notIn: List<Department?>?,
   public val not: Department?,
   public val _count: NestedIntFilter?,
-  public val count: NestedIntFilter?,
   public val _min: NestedEnumDepartmentFilter?,
-  public val min: NestedEnumDepartmentFilter?,
-  public val _max: NestedEnumDepartmentFilter?,
-  public val max: NestedEnumDepartmentFilter?
+  public val _max: NestedEnumDepartmentFilter?
 )
 
 public data class EnumUserRoleWithAggregatesFilter(
@@ -279,11 +273,8 @@ public data class EnumUserRoleWithAggregatesFilter(
   public val notIn: List<UserRole?>?,
   public val not: UserRole?,
   public val _count: NestedIntFilter?,
-  public val count: NestedIntFilter?,
   public val _min: NestedEnumUserRoleFilter?,
-  public val min: NestedEnumUserRoleFilter?,
-  public val _max: NestedEnumUserRoleFilter?,
-  public val max: NestedEnumUserRoleFilter?
+  public val _max: NestedEnumUserRoleFilter?
 )
 
 public data class EnumDepartmentNullableWithAggregatesFilter(
@@ -292,22 +283,16 @@ public data class EnumDepartmentNullableWithAggregatesFilter(
   public val notIn: List<Department?>?,
   public val not: Department?,
   public val _count: NestedIntNullableFilter?,
-  public val count: NestedIntNullableFilter?,
   public val _min: NestedEnumDepartmentNullableFilter?,
-  public val min: NestedEnumDepartmentNullableFilter?,
-  public val _max: NestedEnumDepartmentNullableFilter?,
-  public val max: NestedEnumDepartmentNullableFilter?
+  public val _max: NestedEnumDepartmentNullableFilter?
 )
 
 public data class BoolWithAggregatesFilter(
   public val equals: Boolean?,
   public val not: Boolean?,
   public val _count: NestedIntFilter?,
-  public val count: NestedIntFilter?,
   public val _min: NestedBoolFilter?,
-  public val min: NestedBoolFilter?,
-  public val _max: NestedBoolFilter?,
-  public val max: NestedBoolFilter?
+  public val _max: NestedBoolFilter?
 )
 
 public data class StringFieldUpdateOperationsInput(
@@ -383,11 +368,8 @@ public data class NestedStringWithAggregatesFilter(
   public val endsWith: String?,
   public val not: String?,
   public val _count: NestedIntFilter?,
-  public val count: NestedIntFilter?,
   public val _min: NestedStringFilter?,
-  public val min: NestedStringFilter?,
-  public val _max: NestedStringFilter?,
-  public val max: NestedStringFilter?
+  public val _max: NestedStringFilter?
 )
 
 public data class NestedIntFilter(
@@ -407,11 +389,8 @@ public data class NestedEnumDepartmentWithAggregatesFilter(
   public val notIn: List<Department?>?,
   public val not: Department?,
   public val _count: NestedIntFilter?,
-  public val count: NestedIntFilter?,
   public val _min: NestedEnumDepartmentFilter?,
-  public val min: NestedEnumDepartmentFilter?,
-  public val _max: NestedEnumDepartmentFilter?,
-  public val max: NestedEnumDepartmentFilter?
+  public val _max: NestedEnumDepartmentFilter?
 )
 
 public data class NestedEnumUserRoleWithAggregatesFilter(
@@ -420,11 +399,8 @@ public data class NestedEnumUserRoleWithAggregatesFilter(
   public val notIn: List<UserRole?>?,
   public val not: UserRole?,
   public val _count: NestedIntFilter?,
-  public val count: NestedIntFilter?,
   public val _min: NestedEnumUserRoleFilter?,
-  public val min: NestedEnumUserRoleFilter?,
-  public val _max: NestedEnumUserRoleFilter?,
-  public val max: NestedEnumUserRoleFilter?
+  public val _max: NestedEnumUserRoleFilter?
 )
 
 public data class NestedEnumDepartmentNullableWithAggregatesFilter(
@@ -433,11 +409,8 @@ public data class NestedEnumDepartmentNullableWithAggregatesFilter(
   public val notIn: List<Department?>?,
   public val not: Department?,
   public val _count: NestedIntNullableFilter?,
-  public val count: NestedIntNullableFilter?,
   public val _min: NestedEnumDepartmentNullableFilter?,
-  public val min: NestedEnumDepartmentNullableFilter?,
-  public val _max: NestedEnumDepartmentNullableFilter?,
-  public val max: NestedEnumDepartmentNullableFilter?
+  public val _max: NestedEnumDepartmentNullableFilter?
 )
 
 public data class NestedIntNullableFilter(
@@ -455,9 +428,6 @@ public data class NestedBoolWithAggregatesFilter(
   public val equals: Boolean?,
   public val not: Boolean?,
   public val _count: NestedIntFilter?,
-  public val count: NestedIntFilter?,
   public val _min: NestedBoolFilter?,
-  public val min: NestedBoolFilter?,
-  public val _max: NestedBoolFilter?,
-  public val max: NestedBoolFilter?
+  public val _max: NestedBoolFilter?
 )

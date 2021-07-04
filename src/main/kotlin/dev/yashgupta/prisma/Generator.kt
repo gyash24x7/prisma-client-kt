@@ -37,25 +37,25 @@ class Generator(private val document: Document) {
 		fileBuilder.build().writeTo(path)
 	}
 
-	fun generateFilters() {
-		val filters = document.getInputs()
+	fun generateInputs() {
+		val inputs = document.getInputs()
 
 		val fileBuilder = FileSpec.builder(packageName = packageName, fileName = "Inputs")
 
-		filters.forEach { filter ->
+		inputs.forEach { inputType ->
 
-			val classBuilder = TypeSpec.classBuilder(filter.name).addModifiers(KModifier.DATA)
+			val classBuilder = TypeSpec.classBuilder(inputType.name).addModifiers(KModifier.DATA)
 			val constructorBuilder = FunSpec.constructorBuilder()
 
-			filter.fields.forEach { schemaArg ->
-				val inputType = schemaArg.inputType!!
-				val baseClassName = if (builtInTypes.contains(inputType.type)) {
-					ClassName("kotlin", inputType.type).copy(nullable = !schemaArg.isRequired)
+			inputType.fields.forEach { schemaArg ->
+				val schemaArgInputType = schemaArg.inputType!!
+				val baseClassName = if (builtInTypes.contains(schemaArgInputType.type)) {
+					ClassName("kotlin", schemaArgInputType.type).copy(nullable = !schemaArg.isRequired)
 				} else {
-					ClassName(packageName, inputType.type).copy(nullable = !schemaArg.isRequired)
+					ClassName(packageName, schemaArgInputType.type).copy(nullable = !schemaArg.isRequired)
 				}
 
-				val className = if (inputType.isList) {
+				val className = if (schemaArgInputType.isList) {
 					ClassName("kotlin.collections", "List").plusParameter(baseClassName)
 						.copy(nullable = !schemaArg.isRequired)
 				} else baseClassName
@@ -66,6 +66,46 @@ class Generator(private val document: Document) {
 				classBuilder.addProperty(
 					PropertySpec.builder(schemaArg.name, className)
 						.initializer(schemaArg.name)
+						.build()
+				)
+			}
+
+			classBuilder.primaryConstructor(constructorBuilder.build())
+			fileBuilder.addType(classBuilder.build())
+		}
+
+		fileBuilder.build().writeTo(path)
+	}
+
+	fun generateOutputs() {
+		val outputs = document.getOutputs()
+
+		val fileBuilder = FileSpec.builder(packageName = packageName, fileName = "Outputs")
+
+		outputs.forEach { outputType ->
+
+			val classBuilder = TypeSpec.classBuilder(outputType.name).addModifiers(KModifier.DATA)
+			val constructorBuilder = FunSpec.constructorBuilder()
+
+			outputType.fields.forEach { schemaField ->
+
+				val baseClassName = if (builtInTypes.contains(schemaField.outputType.type)) {
+					ClassName("kotlin", schemaField.outputType.type).copy(nullable = schemaField.isNullable)
+				} else {
+					ClassName(packageName, schemaField.outputType.type).copy(nullable = schemaField.isNullable)
+				}
+
+				val className = if (schemaField.outputType.isList) {
+					ClassName("kotlin.collections", "List").plusParameter(baseClassName)
+						.copy(nullable = schemaField.isNullable)
+				} else baseClassName
+
+				val parameterBuilder = ParameterSpec.builder(schemaField.name, className)
+
+				constructorBuilder.addParameter(parameterBuilder.build())
+				classBuilder.addProperty(
+					PropertySpec.builder(schemaField.name, className)
+						.initializer(schemaField.name)
 						.build()
 				)
 			}

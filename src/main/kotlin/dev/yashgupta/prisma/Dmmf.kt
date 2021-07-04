@@ -9,8 +9,11 @@ data class Document(
 	var schema: Schema,
 	var mappings: Mappings
 ) {
+	private val deprecatedAggregates = listOf("count", "min", "max")
+
 	private fun resolveInput(input: InputType) = input.apply {
-		fields = fields.map { field -> field.apply { inputType = inputTypes[0] } }
+		fields = fields.filter { !deprecatedAggregates.contains(it.name) }
+			.map { field -> field.apply { inputType = inputTypes[0] } }
 	}
 
 	fun getInputs(): List<InputType> {
@@ -21,6 +24,21 @@ data class Document(
 		}
 
 		return inputObjectTypes.map { resolveInput(it) }
+	}
+
+	private fun resolveOutput(output: OutputType) = output.apply {
+		fields = fields.filter { !deprecatedAggregates.contains(it.name) || output.name == "AffectedRowsOutput" }
+	}
+
+	fun getOutputs(): List<OutputType> {
+		val outputObjectTypes = this.schema.outputObjectTypes.prisma.toMutableList()
+
+		if (this.schema.outputObjectTypes.model.isNotEmpty()) {
+			outputObjectTypes += this.schema.outputObjectTypes.model
+		}
+
+		return outputObjectTypes.filter { !listOf("Query", "Mutation").contains(it.name) }
+			.map { resolveOutput(it) }
 	}
 }
 

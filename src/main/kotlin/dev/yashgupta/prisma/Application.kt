@@ -8,5 +8,6 @@ fun main() {
 	val document = format.decodeFromString<Document>(jsonString)
 	val generator = Generator(document)
 	generator.generateEnums()
-	generator.generateFilters()
+	generator.generateInputs()
+	generator.generateOutputs()
 }
