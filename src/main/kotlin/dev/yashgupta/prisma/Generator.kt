@@ -2,8 +2,6 @@ package dev.yashgupta.prisma
 
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.plusParameter
-import dev.yashgupta.prisma.dmmf.Dmmf
-import dev.yashgupta.prisma.dmmf.Document
 import dev.yashgupta.prisma.utils.camelCaseToLowerSnakeCase
 import java.nio.file.Path
 
@@ -13,8 +11,6 @@ class Generator(private val document: Document) {
 	private val path: Path = Path.of("src/main/kotlin")
 	private val packageName = "dev.yashgupta.prisma.generated"
 	private val builtInTypes = listOf("String", "Boolean", "Int", "Double")
-
-	private val dmmf = Dmmf(document)
 
 	fun generateEnums() {
 		val enumList = document.schema.enumTypes.model + document.schema.enumTypes.prisma
@@ -42,9 +38,9 @@ class Generator(private val document: Document) {
 	}
 
 	fun generateFilters() {
-		val filters = dmmf.getFilters()
+		val filters = document.getInputs()
 
-		val fileBuilder = FileSpec.builder(packageName = packageName, fileName = "Filters")
+		val fileBuilder = FileSpec.builder(packageName = packageName, fileName = "Inputs")
 
 		filters.forEach { filter ->
 
@@ -54,16 +50,19 @@ class Generator(private val document: Document) {
 			filter.fields.forEach { schemaArg ->
 				val inputType = schemaArg.inputType!!
 				val baseClassName = if (builtInTypes.contains(inputType.type)) {
-					ClassName("kotlin", inputType.type).copy(nullable = schemaArg.isNullable)
+					ClassName("kotlin", inputType.type).copy(nullable = !schemaArg.isRequired)
 				} else {
-					ClassName(packageName, inputType.type).copy(nullable = schemaArg.isNullable)
+					ClassName(packageName, inputType.type).copy(nullable = !schemaArg.isRequired)
 				}
 
 				val className = if (inputType.isList) {
 					ClassName("kotlin.collections", "List").plusParameter(baseClassName)
+						.copy(nullable = !schemaArg.isRequired)
 				} else baseClassName
 
-				constructorBuilder.addParameter(ParameterSpec.builder(schemaArg.name, className).build())
+				val parameterBuilder = ParameterSpec.builder(schemaArg.name, className)
+
+				constructorBuilder.addParameter(parameterBuilder.build())
 				classBuilder.addProperty(
 					PropertySpec.builder(schemaArg.name, className)
 						.initializer(schemaArg.name)

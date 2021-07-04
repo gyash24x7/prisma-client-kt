@@ -1,6 +1,5 @@
 package dev.yashgupta.prisma
 
-import dev.yashgupta.prisma.dmmf.Document
 import dev.yashgupta.prisma.utils.format
 import kotlinx.serialization.decodeFromString
 

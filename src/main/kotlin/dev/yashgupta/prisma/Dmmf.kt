@@ -1,4 +1,4 @@
-package dev.yashgupta.prisma.dmmf
+package dev.yashgupta.prisma
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
@@ -8,7 +8,21 @@ data class Document(
 	var datamodel: Datamodel,
 	var schema: Schema,
 	var mappings: Mappings
-)
+) {
+	private fun resolveInput(input: InputType) = input.apply {
+		fields = fields.map { field -> field.apply { inputType = inputTypes[0] } }
+	}
+
+	fun getInputs(): List<InputType> {
+		val inputObjectTypes = this.schema.inputObjectTypes.prisma.toMutableList()
+
+		if (this.schema.inputObjectTypes.model.isNotEmpty()) {
+			inputObjectTypes += this.schema.inputObjectTypes.model
+		}
+
+		return inputObjectTypes.map { resolveInput(it) }
+	}
+}
 
 @Serializable
 data class Mappings(
@@ -144,7 +158,6 @@ data class SchemaArgInputType(
 	var location: String, // values -> scalar, inputObjectTypes, outputObjectTypes, enumTypes
 	var namespace: String? = null, // values -> model, prisma
 	var type: String, // refers to some other custom type or primitive type
-	var _type: JsonElement? = null // modified by dmmf constructor
 )
 
 @Serializable
@@ -155,7 +168,8 @@ data class SchemaArg(
 	var isRequired: Boolean,
 	var inputTypes: List<SchemaArgInputType>,
 	var deprecation: Deprecation? = null,
-	var inputType: SchemaArgInputType? = null
+	var inputType: SchemaArgInputType? = null,
+	var hasSelfReference: Boolean = false
 )
 
 @Serializable
@@ -172,7 +186,6 @@ data class SchemaFieldOutputType(
 	var location: String, // values -> scalar, inputObjectTypes, outputObjectTypes, enumTypes
 	var namespace: String? = null,  // values -> model, prisma
 	var type: String, // refers to some other custom type or primitive type
-	var _type: JsonElement? = null // modified by dmmf constructor
 )
 
 @Serializable
