@@ -1,0 +1,573 @@
+type AffectedRowsOutput {
+  count: Int!
+}
+
+type AggregateUser {
+  _count: UserCountAggregateOutputType
+  count: UserCountAggregateOutputType
+  _min: UserMinAggregateOutputType
+  min: UserMinAggregateOutputType
+  _max: UserMaxAggregateOutputType
+  max: UserMaxAggregateOutputType
+}
+
+scalar BigInt
+
+input BoolFieldUpdateOperationsInput {
+  set: Boolean
+}
+
+input BoolFilter {
+  equals: Boolean
+  not: NestedBoolFilter
+}
+
+input BoolWithAggregatesFilter {
+  equals: Boolean
+  not: NestedBoolWithAggregatesFilter
+  _count: NestedIntFilter
+  count: NestedIntFilter
+  _min: NestedBoolFilter
+  min: NestedBoolFilter
+  _max: NestedBoolFilter
+  max: NestedBoolFilter
+}
+
+scalar DateTime
+
+enum Department {
+  Webops
+  ConceptAndDesign
+  SponsorshipAndPr
+  Finance
+  Qms
+  OperationsAndInfrastructurePlanning
+  ShowsAndExhibitions
+  EventsAndWorkshops
+  Publicity
+  Evolve
+  Envisage
+  Admin
+}
+
+input EnumDepartmentFilter {
+  equals: Department
+  in: [Department]
+  notIn: [Department]
+  not: Department
+}
+
+input EnumDepartmentNullableFilter {
+  equals: Department
+  in: [Department]
+  notIn: [Department]
+  not: Department
+}
+
+input EnumDepartmentNullableWithAggregatesFilter {
+  equals: Department
+  in: [Department]
+  notIn: [Department]
+  not: Department
+  _count: NestedIntNullableFilter
+  count: NestedIntNullableFilter
+  _min: NestedEnumDepartmentNullableFilter
+  min: NestedEnumDepartmentNullableFilter
+  _max: NestedEnumDepartmentNullableFilter
+  max: NestedEnumDepartmentNullableFilter
+}
+
+input EnumDepartmentWithAggregatesFilter {
+  equals: Department
+  in: [Department]
+  notIn: [Department]
+  not: Department
+  _count: NestedIntFilter
+  count: NestedIntFilter
+  _min: NestedEnumDepartmentFilter
+  min: NestedEnumDepartmentFilter
+  _max: NestedEnumDepartmentFilter
+  max: NestedEnumDepartmentFilter
+}
+
+input EnumUserRoleFilter {
+  equals: UserRole
+  in: [UserRole]
+  notIn: [UserRole]
+  not: UserRole
+}
+
+input EnumUserRoleWithAggregatesFilter {
+  equals: UserRole
+  in: [UserRole]
+  notIn: [UserRole]
+  not: UserRole
+  _count: NestedIntFilter
+  count: NestedIntFilter
+  _min: NestedEnumUserRoleFilter
+  min: NestedEnumUserRoleFilter
+  _max: NestedEnumUserRoleFilter
+  max: NestedEnumUserRoleFilter
+}
+
+scalar Json
+
+type Mutation {
+  createOneUser(data: UserCreateInput!): User!
+  upsertOneUser(
+    where: UserWhereUniqueInput!
+    create: UserCreateInput!
+    update: UserUpdateInput!
+  ): User!
+  createManyUser(
+    data: [UserCreateManyInput]!
+    skipDuplicates: Boolean
+  ): AffectedRowsOutput!
+  deleteOneUser(where: UserWhereUniqueInput!): User
+  updateOneUser(data: UserUpdateInput!, where: UserWhereUniqueInput!): User
+  updateManyUser(
+    data: UserUpdateManyMutationInput!
+    where: UserWhereInput
+  ): AffectedRowsOutput!
+  deleteManyUser(where: UserWhereInput): AffectedRowsOutput!
+}
+
+input NestedBoolFilter {
+  equals: Boolean
+  not: NestedBoolFilter
+}
+
+input NestedBoolWithAggregatesFilter {
+  equals: Boolean
+  not: NestedBoolWithAggregatesFilter
+  _count: NestedIntFilter
+  count: NestedIntFilter
+  _min: NestedBoolFilter
+  min: NestedBoolFilter
+  _max: NestedBoolFilter
+  max: NestedBoolFilter
+}
+
+input NestedEnumDepartmentFilter {
+  equals: Department
+  in: [Department]
+  notIn: [Department]
+  not: Department
+}
+
+input NestedEnumDepartmentNullableFilter {
+  equals: Department
+  in: [Department]
+  notIn: [Department]
+  not: Department
+}
+
+input NestedEnumUserRoleFilter {
+  equals: UserRole
+  in: [UserRole]
+  notIn: [UserRole]
+  not: UserRole
+}
+
+input NestedIntFilter {
+  equals: Int
+  in: [Int]
+  notIn: [Int]
+  lt: Int
+  lte: Int
+  gt: Int
+  gte: Int
+  not: NestedIntFilter
+}
+
+input NestedIntNullableFilter {
+  equals: Int
+  in: [Int]
+  notIn: [Int]
+  lt: Int
+  lte: Int
+  gt: Int
+  gte: Int
+  not: NestedIntNullableFilter
+}
+
+input NestedStringFilter {
+  equals: String
+  in: [String]
+  notIn: [String]
+  lt: String
+  lte: String
+  gt: String
+  gte: String
+  contains: String
+  startsWith: String
+  endsWith: String
+  not: NestedStringFilter
+}
+
+input NestedStringWithAggregatesFilter {
+  equals: String
+  in: [String]
+  notIn: [String]
+  lt: String
+  lte: String
+  gt: String
+  gte: String
+  contains: String
+  startsWith: String
+  endsWith: String
+  not: NestedStringWithAggregatesFilter
+  _count: NestedIntFilter
+  count: NestedIntFilter
+  _min: NestedStringFilter
+  min: NestedStringFilter
+  _max: NestedStringFilter
+  max: NestedStringFilter
+}
+
+type Query {
+  findFirstUser(
+    where: UserWhereInput
+    orderBy: [UserOrderByInput]
+    cursor: UserWhereUniqueInput
+    take: Int
+    skip: Int
+    distinct: [UserScalarFieldEnum]
+  ): User
+  findManyUser(
+    where: UserWhereInput
+    orderBy: [UserOrderByInput]
+    cursor: UserWhereUniqueInput
+    take: Int
+    skip: Int
+    distinct: [UserScalarFieldEnum]
+  ): [User]!
+  aggregateUser(
+    where: UserWhereInput
+    orderBy: [UserOrderByInput]
+    cursor: UserWhereUniqueInput
+    take: Int
+    skip: Int
+  ): AggregateUser!
+  groupByUser(
+    where: UserWhereInput
+    orderBy: [UserOrderByInput]
+    by: [UserScalarFieldEnum]!
+    having: UserScalarWhereWithAggregatesInput
+    take: Int
+    skip: Int
+  ): [UserGroupByOutputType]!
+  findUniqueUser(where: UserWhereUniqueInput!): User
+}
+
+enum QueryMode {
+  default
+  insensitive
+}
+
+enum SortOrder {
+  asc
+  desc
+}
+
+input StringFieldUpdateOperationsInput {
+  set: String
+}
+
+input StringFilter {
+  equals: String
+  in: [String]
+  notIn: [String]
+  lt: String
+  lte: String
+  gt: String
+  gte: String
+  contains: String
+  startsWith: String
+  endsWith: String
+  mode: QueryMode
+  not: NestedStringFilter
+}
+
+input StringWithAggregatesFilter {
+  equals: String
+  in: [String]
+  notIn: [String]
+  lt: String
+  lte: String
+  gt: String
+  gte: String
+  contains: String
+  startsWith: String
+  endsWith: String
+  mode: QueryMode
+  not: NestedStringWithAggregatesFilter
+  _count: NestedIntFilter
+  count: NestedIntFilter
+  _min: NestedStringFilter
+  min: NestedStringFilter
+  _max: NestedStringFilter
+  max: NestedStringFilter
+}
+
+type User {
+  id: String!
+  name: String!
+  email: String!
+  rollNumber: String!
+  department: Department!
+  role: UserRole!
+  password: String!
+  salt: String!
+  profilePic: String!
+  coverPic: String!
+  mobile: String!
+  upi: String!
+  finManagerForDept: Department
+  enabled: Boolean!
+  verified: Boolean!
+}
+
+type UserCountAggregateOutputType {
+  id: Int!
+  name: Int!
+  email: Int!
+  rollNumber: Int!
+  department: Int!
+  role: Int!
+  password: Int!
+  salt: Int!
+  profilePic: Int!
+  coverPic: Int!
+  mobile: Int!
+  upi: Int!
+  finManagerForDept: Int!
+  enabled: Int!
+  verified: Int!
+  _all: Int!
+}
+
+input UserCreateInput {
+  id: String
+  name: String!
+  email: String!
+  rollNumber: String!
+  department: Department!
+  role: UserRole
+  password: String!
+  salt: String!
+  profilePic: String
+  coverPic: String
+  mobile: String!
+  upi: String
+  finManagerForDept: Department
+  enabled: Boolean
+  verified: Boolean
+}
+
+input UserCreateManyInput {
+  id: String
+  name: String!
+  email: String!
+  rollNumber: String!
+  department: Department!
+  role: UserRole
+  password: String!
+  salt: String!
+  profilePic: String
+  coverPic: String
+  mobile: String!
+  upi: String
+  finManagerForDept: Department
+  enabled: Boolean
+  verified: Boolean
+}
+
+type UserGroupByOutputType {
+  id: String!
+  name: String!
+  email: String!
+  rollNumber: String!
+  department: Department!
+  role: UserRole!
+  password: String!
+  salt: String!
+  profilePic: String!
+  coverPic: String!
+  mobile: String!
+  upi: String!
+  finManagerForDept: Department
+  enabled: Boolean!
+  verified: Boolean!
+  _count: UserCountAggregateOutputType
+  _min: UserMinAggregateOutputType
+  _max: UserMaxAggregateOutputType
+}
+
+type UserMaxAggregateOutputType {
+  id: String
+  name: String
+  email: String
+  rollNumber: String
+  department: Department
+  role: UserRole
+  password: String
+  salt: String
+  profilePic: String
+  coverPic: String
+  mobile: String
+  upi: String
+  finManagerForDept: Department
+  enabled: Boolean
+  verified: Boolean
+}
+
+type UserMinAggregateOutputType {
+  id: String
+  name: String
+  email: String
+  rollNumber: String
+  department: Department
+  role: UserRole
+  password: String
+  salt: String
+  profilePic: String
+  coverPic: String
+  mobile: String
+  upi: String
+  finManagerForDept: Department
+  enabled: Boolean
+  verified: Boolean
+}
+
+input UserOrderByInput {
+  id: SortOrder
+  name: SortOrder
+  email: SortOrder
+  rollNumber: SortOrder
+  department: SortOrder
+  role: SortOrder
+  password: SortOrder
+  salt: SortOrder
+  profilePic: SortOrder
+  coverPic: SortOrder
+  mobile: SortOrder
+  upi: SortOrder
+  finManagerForDept: SortOrder
+  enabled: SortOrder
+  verified: SortOrder
+}
+
+enum UserRole {
+  Coordinator
+  Head
+  Core
+  Cocas
+  Cocad
+}
+
+enum UserScalarFieldEnum {
+  id
+  name
+  email
+  rollNumber
+  department
+  role
+  password
+  salt
+  profilePic
+  coverPic
+  mobile
+  upi
+  finManagerForDept
+  enabled
+  verified
+}
+
+input UserScalarWhereWithAggregatesInput {
+  AND: UserScalarWhereWithAggregatesInput
+  OR: [UserScalarWhereWithAggregatesInput]
+  NOT: UserScalarWhereWithAggregatesInput
+  id: StringWithAggregatesFilter
+  name: StringWithAggregatesFilter
+  email: StringWithAggregatesFilter
+  rollNumber: StringWithAggregatesFilter
+  department: EnumDepartmentWithAggregatesFilter
+  role: EnumUserRoleWithAggregatesFilter
+  password: StringWithAggregatesFilter
+  salt: StringWithAggregatesFilter
+  profilePic: StringWithAggregatesFilter
+  coverPic: StringWithAggregatesFilter
+  mobile: StringWithAggregatesFilter
+  upi: StringWithAggregatesFilter
+  finManagerForDept: EnumDepartmentNullableWithAggregatesFilter
+  enabled: BoolWithAggregatesFilter
+  verified: BoolWithAggregatesFilter
+}
+
+input UserUpdateInput {
+  id: StringFieldUpdateOperationsInput
+  name: StringFieldUpdateOperationsInput
+  email: StringFieldUpdateOperationsInput
+  rollNumber: StringFieldUpdateOperationsInput
+  department: Department
+  role: UserRole
+  password: StringFieldUpdateOperationsInput
+  salt: StringFieldUpdateOperationsInput
+  profilePic: StringFieldUpdateOperationsInput
+  coverPic: StringFieldUpdateOperationsInput
+  mobile: StringFieldUpdateOperationsInput
+  upi: StringFieldUpdateOperationsInput
+  finManagerForDept: Department
+  enabled: BoolFieldUpdateOperationsInput
+  verified: BoolFieldUpdateOperationsInput
+}
+
+input UserUpdateManyMutationInput {
+  id: StringFieldUpdateOperationsInput
+  name: StringFieldUpdateOperationsInput
+  email: StringFieldUpdateOperationsInput
+  rollNumber: StringFieldUpdateOperationsInput
+  department: Department
+  role: UserRole
+  password: StringFieldUpdateOperationsInput
+  salt: StringFieldUpdateOperationsInput
+  profilePic: StringFieldUpdateOperationsInput
+  coverPic: StringFieldUpdateOperationsInput
+  mobile: StringFieldUpdateOperationsInput
+  upi: StringFieldUpdateOperationsInput
+  finManagerForDept: Department
+  enabled: BoolFieldUpdateOperationsInput
+  verified: BoolFieldUpdateOperationsInput
+}
+
+input UserWhereInput {
+  AND: UserWhereInput
+  OR: [UserWhereInput]
+  NOT: UserWhereInput
+  id: StringFilter
+  name: StringFilter
+  email: StringFilter
+  rollNumber: StringFilter
+  department: EnumDepartmentFilter
+  role: EnumUserRoleFilter
+  password: StringFilter
+  salt: StringFilter
+  profilePic: StringFilter
+  coverPic: StringFilter
+  mobile: StringFilter
+  upi: StringFilter
+  finManagerForDept: EnumDepartmentNullableFilter
+  enabled: BoolFilter
+  verified: BoolFilter
+}
+
+input UserWhereUniqueInput {
+  id: String
+  email: String
+  rollNumber: String
+  salt: String
+}
+
+scalar UUID
+

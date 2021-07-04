@@ -1,0 +1,29 @@
+{
+  "generators": [
+    {
+      "name": "client",
+      "provider": {
+        "fromEnvVar": null,
+        "value": "prisma-client-js"
+      },
+      "output": null,
+      "config": {},
+      "binaryTargets": [],
+      "previewFeatures": []
+    }
+  ],
+  "datasources": [
+    {
+      "name": "db",
+      "provider": [
+        "postgresql"
+      ],
+      "activeProvider": "postgresql",
+      "url": {
+        "fromEnvVar": null,
+        "value": "postgresql://gyuapstha:xdcVy2Ue@localhost:5432/prisma-test"
+      }
+    }
+  ],
+  "warnings": []
+}

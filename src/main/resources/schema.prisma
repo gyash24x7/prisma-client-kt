@@ -1,0 +1,52 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+datasource db {
+  provider = "postgresql"
+  url      = "postgresql://gyuapstha:xdcVy2Ue@localhost:5432/prisma-test"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id                    String       @id @default(cuid())
+  name                  String
+  email                 String       @unique
+  rollNumber            String       @unique
+  department            Department
+  role                  UserRole     @default(Coordinator)
+  password              String
+  salt                  String       @unique
+  profilePic            String       @default("")
+  coverPic              String       @default("")
+  mobile                String
+  upi                   String       @default("")
+  finManagerForDept     Department?
+  enabled               Boolean     @default(false)
+  verified              Boolean     @default(false)
+}
+
+enum UserRole {
+  Coordinator
+  Head
+  Core
+  Cocas
+  Cocad
+}
+
+enum Department {
+  Webops
+  ConceptAndDesign
+  SponsorshipAndPr
+  Finance
+  Qms
+  OperationsAndInfrastructurePlanning
+  ShowsAndExhibitions
+  EventsAndWorkshops
+  Publicity
+  Evolve
+  Envisage
+  Admin
+}
