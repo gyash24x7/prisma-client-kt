@@ -4,43 +4,39 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 
 @Serializable
-data class Document(
+data class DmmfDoc(
 	var datamodel: Datamodel,
 	var schema: Schema,
 	var mappings: Mappings
 ) {
 	private val deprecatedAggregates = listOf("count", "min", "max")
 
-	private fun resolveInput(input: InputType) = input.apply {
-		fields = fields.filter { !deprecatedAggregates.contains(it.name) }
-			.map { field -> field.apply { inputType = inputTypes[0] } }
-	}
-
-	fun getInputs(): List<InputType> {
-		val inputObjectTypes = this.schema.inputObjectTypes.prisma.toMutableList()
-
-		if (this.schema.inputObjectTypes.model.isNotEmpty()) {
-			inputObjectTypes += this.schema.inputObjectTypes.model
+	fun getInputs() = this.schema.inputObjectTypes.prisma.plus(this.schema.inputObjectTypes.model)
+		.map { input ->
+			input.apply {
+				fields = fields.filter { !deprecatedAggregates.contains(it.name) }
+					.map { field -> field.apply { inputType = inputTypes[0] } }
+			}
 		}
 
-		return inputObjectTypes.map { resolveInput(it) }
-	}
-
-	private fun resolveOutput(output: OutputType) = output.apply {
-		fields = fields.filter { !deprecatedAggregates.contains(it.name) || output.name == "AffectedRowsOutput" }
-	}
-
-	fun getOutputs(): List<OutputType> {
-		val outputObjectTypes = this.schema.outputObjectTypes.prisma.toMutableList()
-
-		if (this.schema.outputObjectTypes.model.isNotEmpty()) {
-			outputObjectTypes += this.schema.outputObjectTypes.model
+	fun getOutputs() = this.schema.outputObjectTypes.prisma.plus(this.schema.outputObjectTypes.model)
+		.filter { !listOf("Query", "Mutation").contains(it.name) }
+		.map { output ->
+			output.apply {
+				fields = fields.filter { !deprecatedAggregates.contains(it.name) || output.name == "AffectedRowsOutput" }
+			}
 		}
 
-		return outputObjectTypes.filter { !listOf("Query", "Mutation").contains(it.name) }
-			.map { resolveOutput(it) }
-	}
+
+	fun getOperations() = this.schema.outputObjectTypes.prisma.plus(this.schema.outputObjectTypes.model)
+		.filter { listOf("Query", "Mutation").contains(it.name) }
+		.flatMap {
+			it.fields.map { field ->
+				Pair(it.name, field.apply { args = args.map { arg -> arg.apply { inputType = inputTypes[0] } } })
+			}
+		}
 }
+
 
 @Serializable
 data class Mappings(
@@ -131,13 +127,13 @@ data class FieldDefault(
 @Serializable
 data class SchemaInputObjectTypes(
 	var model: List<InputType> = emptyList(),
-	var prisma: List<InputType>
+	var prisma: List<InputType> = emptyList()
 )
 
 @Serializable
 data class SchemaOutputObjectTypes(
-	var model: List<OutputType>,
-	var prisma: List<OutputType>
+	var model: List<OutputType> = emptyList(),
+	var prisma: List<OutputType> = emptyList()
 )
 
 @Serializable
