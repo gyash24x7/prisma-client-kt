@@ -11,7 +11,11 @@ data class DmmfDoc(
 ) {
 	private val deprecatedAggregates = listOf("count", "min", "max")
 
-	fun getInputs() = this.schema.inputObjectTypes.prisma.plus(this.schema.inputObjectTypes.model)
+	val models = datamodel.models.map { it.name }
+
+	val enums = schema.enumTypes.model.plus(schema.enumTypes.prisma)
+
+	val inputs = schema.inputObjectTypes.prisma.plus(schema.inputObjectTypes.model)
 		.map { input ->
 			input.apply {
 				fields = fields.filter { !deprecatedAggregates.contains(it.name) }
@@ -19,7 +23,7 @@ data class DmmfDoc(
 			}
 		}
 
-	fun getOutputs() = this.schema.outputObjectTypes.prisma.plus(this.schema.outputObjectTypes.model)
+	val outputs = schema.outputObjectTypes.prisma.plus(schema.outputObjectTypes.model)
 		.filter { !listOf("Query", "Mutation").contains(it.name) }
 		.map { output ->
 			output.apply {
@@ -27,14 +31,29 @@ data class DmmfDoc(
 			}
 		}
 
-
-	fun getOperations() = this.schema.outputObjectTypes.prisma.plus(this.schema.outputObjectTypes.model)
-		.filter { listOf("Query", "Mutation").contains(it.name) }
+	val queries = schema.outputObjectTypes.prisma.plus(schema.outputObjectTypes.model)
+		.filter { it.name == "Query" }
 		.flatMap {
 			it.fields.map { field ->
-				Pair(it.name, field.apply { args = args.map { arg -> arg.apply { inputType = inputTypes[0] } } })
+				field.apply { args = args.map { arg -> arg.apply { inputType = inputTypes[0] } } }
 			}
 		}
+
+	val mutations = schema.outputObjectTypes.prisma.plus(schema.outputObjectTypes.model)
+		.filter { it.name == "Mutation" }
+		.flatMap {
+			it.fields.map { field ->
+				field.apply { args = args.map { arg -> arg.apply { inputType = inputTypes[0] } } }
+			}
+		}
+
+	@OptIn(ExperimentalStdlibApi::class)
+	val modelOperationMap = buildMap<String, List<SchemaField>> {
+		models.forEach { model ->
+			val modelOperations = queries.plus(mutations).filter { it.name.endsWith(model) }
+			put(model, modelOperations)
+		}
+	}
 }
 
 
@@ -150,21 +169,6 @@ data class Schema(
 	var outputObjectTypes: SchemaOutputObjectTypes,
 	var enumTypes: SchemaEnumTypes
 )
-
-@Serializable
-data class Query(
-	var name: String,
-	var args: List<SchemaArg>,
-	var output: QueryOutput
-)
-
-@Serializable
-data class QueryOutput(
-	var name: String,
-	var isRequired: Boolean,
-	var isList: Boolean
-)
-
 
 @Serializable
 data class SchemaArgInputType(

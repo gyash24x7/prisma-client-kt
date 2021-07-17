@@ -3,12 +3,7 @@ package dev.yashgupta.prisma.codegen.generators
 import com.squareup.kotlinpoet.*
 import kotlinx.serialization.Serializable
 
-data class Field(
-	val name: String,
-	val type: TypeName,
-	val nullable: Boolean,
-	val default: CodeBlock? = null
-)
+data class Field(val name: String, val type: TypeName, val nullable: Boolean)
 
 fun generateType(name: String, fields: List<Field>, packageName: String): FileSpec {
 
@@ -20,10 +15,7 @@ fun generateType(name: String, fields: List<Field>, packageName: String): FileSp
 		val returnType = if (field.nullable) field.type.copy(nullable = true) else field.type
 		val parameterSpec = ParameterSpec.builder(field.name, returnType)
 
-		if (field.default != null) parameterSpec.defaultValue(field.default)
-		else if (field.nullable) {
-			parameterSpec.defaultValue(CodeBlock.of("null"))
-		}
+		if (field.nullable) parameterSpec.defaultValue(CodeBlock.of("null"))
 
 		constructorSpec.addParameter(parameterSpec.build())
 		val propertySpec = PropertySpec.builder(field.name, returnType).initializer(field.name)

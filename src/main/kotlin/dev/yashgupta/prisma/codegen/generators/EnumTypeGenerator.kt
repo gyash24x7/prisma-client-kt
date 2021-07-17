@@ -6,7 +6,7 @@ import com.squareup.kotlinpoet.TypeSpec
 import dev.yashgupta.prisma.codegen.Codegen
 import net.pearx.kasechange.toScreamingSnakeCase
 
-fun Codegen.generateEnums() = dmmf.schema.enumTypes.model.plus(dmmf.schema.enumTypes.prisma).map { schemaEnum ->
+fun Codegen.generateEnums() = dmmf.enums.map { schemaEnum ->
 	val enumSpec = TypeSpec.enumBuilder(schemaEnum.name)
 		.primaryConstructor(FunSpec.constructorBuilder().addParameter("_name", String::class).build())
 

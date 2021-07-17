@@ -4,7 +4,7 @@ import java.nio.file.Path
 import java.nio.file.Paths
 
 data class CodegenConfig(
-	val outputDir: Path = Paths.get("generated"),
+	val outputDir: Path = Paths.get("build", "generated"),
 	val packageName: String = "dev.yashgupta.prisma.generated",
 	val maxProjectionDepth: Int = 10,
 	val dmmf: String = ""

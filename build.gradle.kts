@@ -16,7 +16,7 @@ repositories {
 
 sourceSets {
 	main {
-		java.srcDir("generated")
+		java.srcDir("build/generated")
 	}
 }
 

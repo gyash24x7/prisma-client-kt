@@ -2,13 +2,14 @@ package dev.yashgupta.prisma.codegen.generators
 
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
+import dev.yashgupta.prisma.SchemaField
 import dev.yashgupta.prisma.codegen.Codegen
 import dev.yashgupta.prisma.codegen.GraphQLOperation
-import dev.yashgupta.prisma.codegen.getKtpType
+import dev.yashgupta.prisma.codegen.getType
 import net.pearx.kasechange.toCamelCase
 import net.pearx.kasechange.toPascalCase
 
-fun Codegen.generateOperations() = dmmf.getOperations().map { (operationType, operation) ->
+fun Codegen.generateOperation(operation: SchemaField, operationType: String): FileSpec {
 	val name = operation.name.toPascalCase() + "Operation"
 	val className = ClassName(config.packageNameOperations, name)
 	val classSpec = TypeSpec.classBuilder(className).superclass(GraphQLOperation::class)
@@ -33,7 +34,7 @@ fun Codegen.generateOperations() = dmmf.getOperations().map { (operationType, op
 	)
 
 	operation.args.forEach { arg ->
-		var returnType = getKtpType(arg.inputType!!.location, arg.inputType!!.type)
+		var returnType = getType(arg.inputType!!.location, arg.inputType!!.type)
 		if (arg.inputType!!.isList) returnType = LIST.parameterizedBy(returnType)
 		returnType = returnType.copy(nullable = !arg.isRequired)
 
@@ -72,5 +73,9 @@ fun Codegen.generateOperations() = dmmf.getOperations().map { (operationType, op
 	classSpec.addFunction(secondaryConstructorSpec.build())
 
 	val fileSpec = FileSpec.builder(config.packageNameOperations, name).addType(classSpec.build())
-	fileSpec.build()
+	return fileSpec.build()
 }
+
+fun Codegen.generateQueries() = dmmf.queries.map { generateOperation(it, "Query") }
+
+fun Codegen.generateMutations() = dmmf.mutations.map { generateOperation(it, "Mutation") }

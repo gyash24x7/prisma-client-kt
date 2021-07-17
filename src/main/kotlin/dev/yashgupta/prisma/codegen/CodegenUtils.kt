@@ -15,7 +15,7 @@ val format = Json {
 }
 
 
-fun Codegen.getKtpType(location: String, type: String): TypeName = when (location) {
+fun Codegen.getType(location: String, type: String): TypeName = when (location) {
 	"scalar" -> when (type) {
 		"String" -> ClassName("kotlin", "String")
 		"Boolean" -> ClassName("kotlin", "Boolean")
