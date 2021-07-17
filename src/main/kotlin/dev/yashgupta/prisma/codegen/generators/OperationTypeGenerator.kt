@@ -6,50 +6,43 @@ import dev.yashgupta.prisma.SchemaField
 import dev.yashgupta.prisma.codegen.Codegen
 import dev.yashgupta.prisma.codegen.GraphQLOperation
 import dev.yashgupta.prisma.codegen.getType
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import net.pearx.kasechange.toCamelCase
 import net.pearx.kasechange.toPascalCase
 
 fun Codegen.generateOperation(operation: SchemaField, operationType: String): FileSpec {
 	val name = operation.name.toPascalCase() + "Operation"
 	val className = ClassName(config.packageNameOperations, name)
-	val classSpec = TypeSpec.classBuilder(className).superclass(GraphQLOperation::class)
-		.addSuperclassConstructorParameter(""" "${operationType.toCamelCase()}" """)
+	val classSpec = TypeSpec.classBuilder(className)
+		.addSuperinterface(GraphQLOperation::class)
+		.addAnnotation(AnnotationSpec.builder(Serializable::class).build())
 
 	val primaryConstructorParamString = operation.args.mapNotNull {
 		if (it.isRequired && !it.inputType!!.isList) it.name else null
 	}.joinToString(", ")
 
+	val operationNamePropertySpec = PropertySpec.builder("name", String::class)
+		.addModifiers(KModifier.OVERRIDE)
+		.addAnnotation(AnnotationSpec.builder(Transient::class).build())
+		.initializer(""" "${operation.name.toCamelCase()}" """)
+
+	val operationTypePropertySpec = PropertySpec.builder("type", String::class)
+		.addModifiers(KModifier.OVERRIDE)
+		.addAnnotation(AnnotationSpec.builder(Transient::class).build())
+		.initializer(""" "$operationType" """)
+
 	val primaryConstructorSpec = FunSpec.constructorBuilder()
 	val secondaryConstructorSpec = FunSpec.constructorBuilder()
 		.addStatement("""val operation = ${name}(${primaryConstructorParamString}).apply(block)""")
-		.addStatement("""fieldSet = operation.fieldSet""")
 		.callThisConstructor(primaryConstructorParamString)
-
-	classSpec.addFunction(
-		FunSpec.builder("getOperationName")
-			.addModifiers(KModifier.OVERRIDE)
-			.returns(String::class)
-			.addCode(""" return "${operation.name}" """)
-			.build()
-	)
 
 	operation.args.forEach { arg ->
 		var returnType = getType(arg.inputType!!.location, arg.inputType!!.type)
 		if (arg.inputType!!.isList) returnType = LIST.parameterizedBy(returnType)
 		returnType = returnType.copy(nullable = !arg.isRequired)
 
-		val argSetterFunSpec = FunSpec.setterBuilder()
-			.addParameter("value", returnType)
-			.addStatement(
-				"""
-					fieldSet+="${arg.name}"
-					field = value
-					value?.let { input["${arg.name}"] = value }
-				""".trimIndent()
-			)
-
-		val argPropertySpec = PropertySpec.builder(arg.name, returnType)
-			.mutable(true).setter(argSetterFunSpec.build())
+		val argPropertySpec = PropertySpec.builder(arg.name, returnType).mutable(true)
 
 		if (!arg.isRequired) {
 			argPropertySpec.initializer("""null""")
@@ -69,6 +62,8 @@ fun Codegen.generateOperation(operation: SchemaField, operationType: String): Fi
 	val builderLambdaSpec = LambdaTypeName.get(className, emptyList(), Unit::class.asTypeName())
 	secondaryConstructorSpec.addParameter(ParameterSpec.builder("block", builderLambdaSpec).build())
 
+	classSpec.addProperty(operationTypePropertySpec.build())
+	classSpec.addProperty(operationNamePropertySpec.build())
 	classSpec.primaryConstructor(primaryConstructorSpec.build())
 	classSpec.addFunction(secondaryConstructorSpec.build())
 
@@ -76,6 +71,6 @@ fun Codegen.generateOperation(operation: SchemaField, operationType: String): Fi
 	return fileSpec.build()
 }
 
-fun Codegen.generateQueries() = dmmf.queries.map { generateOperation(it, "Query") }
+fun Codegen.generateQueries() = dmmf.queries.map { generateOperation(it, "query") }
 
-fun Codegen.generateMutations() = dmmf.mutations.map { generateOperation(it, "Mutation") }
+fun Codegen.generateMutations() = dmmf.mutations.map { generateOperation(it, "mutation") }

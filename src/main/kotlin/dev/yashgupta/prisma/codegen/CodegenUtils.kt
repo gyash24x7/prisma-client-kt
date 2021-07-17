@@ -9,7 +9,7 @@ val format = Json {
 	isLenient = true
 	ignoreUnknownKeys = true
 	coerceInputValues = true
-	encodeDefaults = true
+	encodeDefaults = false
 	allowStructuredMapKeys = true
 	allowSpecialFloatingPointValues = true
 }
