@@ -1,6 +1,16 @@
-package dev.yashgupta.prisma.codegen
+package dev.yashgupta.prisma.client
 
 import kotlinx.serialization.json.*
+
+val format = Json {
+	prettyPrint = true
+	isLenient = true
+	ignoreUnknownKeys = true
+	coerceInputValues = true
+	encodeDefaults = false
+	allowStructuredMapKeys = true
+	allowSpecialFloatingPointValues = true
+}
 
 fun serializeInput(input: JsonElement?): String = when (input) {
 	null -> "null"

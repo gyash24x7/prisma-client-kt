@@ -1,4 +1,4 @@
-package dev.yashgupta.prisma
+package dev.yashgupta.prisma.codegen
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
@@ -11,7 +11,7 @@ data class DmmfDoc(
 ) {
 	private val deprecatedAggregates = listOf("count", "min", "max")
 
-	val models = datamodel.models.map { it.name }
+	val models = schema.outputObjectTypes.model
 
 	val enums = schema.enumTypes.model.plus(schema.enumTypes.prisma)
 
@@ -50,8 +50,8 @@ data class DmmfDoc(
 	@OptIn(ExperimentalStdlibApi::class)
 	val modelOperationMap = buildMap<String, List<SchemaField>> {
 		models.forEach { model ->
-			val modelOperations = queries.plus(mutations).filter { it.name.endsWith(model) }
-			put(model, modelOperations)
+			val modelOperations = queries.plus(mutations).filter { it.name.endsWith(model.name) }
+			put(model.name, modelOperations)
 		}
 	}
 }
