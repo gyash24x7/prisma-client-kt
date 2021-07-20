@@ -2,44 +2,77 @@ package dev.yashgupta.prisma.client
 
 import kotlinx.serialization.json.*
 
-val format = Json {
+val json = Json {
 	prettyPrint = true
 	isLenient = true
 	ignoreUnknownKeys = true
 	coerceInputValues = true
-	encodeDefaults = false
+	encodeDefaults = true
 	allowStructuredMapKeys = true
 	allowSpecialFloatingPointValues = true
 }
 
-fun serializeInput(input: JsonElement?): String = when (input) {
-	null -> "null"
-	is JsonNull -> "null"
-	is JsonArray -> """[${input.filterNot { it is JsonNull }.joinToString(", ") { serializeInput(it) }}]"""
-	is JsonPrimitive -> if (input.isString) input.getIfEnum() ?: input.toString() else input.content
-	is JsonObject -> input.map { (key, value) -> """$key: ${serializeInput(value)}""" }
-		.joinToString(separator = ", ", prefix = "{ ", postfix = " }")
+fun serializeInput(input: JsonElement, isEntry: Boolean = false): String {
+	val prefix = if (isEntry) "( " else "{ "
+	val postfix = if (isEntry) " )" else " }"
+
+	return when (input) {
+		is JsonArray -> """[${input.joinToString(", ") { serializeInput(it) }}]"""
+		is JsonPrimitive -> if (input.isString) input.getIfEnum() ?: input.toString() else input.content
+		is JsonObject -> input.entries.filterNot { it.value is JsonNull }
+			.joinToString(prefix = prefix, separator = ", ", postfix = postfix) {
+				"""${it.key}: ${serializeInput(it.value)}"""
+			}
+		else -> ""
+	}
 }
+
+fun serializeSelection(selection: JsonObject): String = selection
+	.mapNotNull {
+		when (it.value) {
+			is JsonNull -> null
+			is JsonArray -> null
+			is JsonPrimitive -> if ((it.value as JsonPrimitive).boolean) it.key else null
+			is JsonObject -> {
+				var selectionString = it.key
+				val args = buildJsonObject {
+					(it.value as JsonObject)
+						.filter { arg -> arg.value !is JsonNull && arg.key != "select" }
+						.forEach { arg -> put(arg.key, arg.value) }
+				}
+
+				println(args)
+				val selectionJson = it.value.jsonObject["select"] as JsonObject
+				if (args.isNotEmpty()) selectionString += " ${serializeInput(args, true)}"
+				selectionString += " ${serializeSelection(selectionJson)}"
+				selectionString
+			}
+		}
+	}
+	.joinToString(separator = ", ", prefix = "{ ", postfix = " }")
 
 fun JsonPrimitive.getIfEnum(): String? {
 	if (content.startsWith("__enum__")) return content.substring(content.lastIndexOf("__") + 2)
 	return null
 }
 
-interface GraphQLOperation {
-	val type: String
-	val name: String
+fun serializeRequest(request: Request): String {
+	val (type, name, operation, selection) = request
+	return buildString {
+		append(type)
+		append(" { ")
+		append(name)
+		if (operation.isNotEmpty()) {
+			append(serializeInput(operation, true))
+		}
+		append(serializeSelection(selection))
+		append(" }")
+	}
 }
 
-inline fun <reified T : GraphQLOperation> serializeOperation(operation: T) = buildString {
-	append(operation.type)
-	append(" { ")
-	append(operation.name)
-	val operationJson = format.encodeToJsonElement(operation)
-	if (operationJson is JsonObject && operationJson.isNotEmpty()) {
-		append("( ")
-		append(operationJson.entries.joinToString(", ") { (key, value) -> "${key}: ${serializeInput(value)}" })
-		append(" )")
-	}
-	append(" }")
-}
+data class Request(
+	val type: String,
+	val name: String,
+	val input: JsonObject,
+	val selection: JsonObject
+)

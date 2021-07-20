@@ -31,6 +31,14 @@ data class DmmfDoc(
 			}
 		}
 
+	val operationInputs = schema.outputObjectTypes.prisma.plus(schema.outputObjectTypes.model)
+		.filter { it.name == "Query" || it.name == "Mutation" }
+		.flatMap {
+			it.fields.map { field ->
+				field.apply { args = args.map { arg -> arg.apply { inputType = inputTypes[0] } } }
+			}
+		}
+
 	val queries = schema.outputObjectTypes.prisma.plus(schema.outputObjectTypes.model)
 		.filter { it.name == "Query" }
 		.flatMap {

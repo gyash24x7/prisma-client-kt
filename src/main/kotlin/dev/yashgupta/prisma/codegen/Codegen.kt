@@ -2,11 +2,10 @@ package dev.yashgupta.prisma.codegen
 
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
-import dev.yashgupta.prisma.client.GraphQLOperation
+import dev.yashgupta.prisma.client.json
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.Transient
 import kotlinx.serialization.decodeFromString
 import net.pearx.kasechange.toCamelCase
 import net.pearx.kasechange.toPascalCase
@@ -14,7 +13,7 @@ import net.pearx.kasechange.toScreamingSnakeCase
 
 class Codegen(val config: CodegenConfig) {
 
-	val dmmf: DmmfDoc = format.decodeFromString(config.dmmf)
+	val dmmf: DmmfDoc = json.decodeFromString(config.dmmf)
 	val serializableAnnotationSpec = AnnotationSpec.builder(Serializable::class).build()
 
 	data class Field(val name: String, val type: TypeName, val nullable: Boolean)
@@ -23,10 +22,9 @@ class Codegen(val config: CodegenConfig) {
 		generateEnums().asSequence()
 			.plus(generateOutputTypes())
 			.plus(generateInputTypes())
-			.plus(generateQueries())
-			.plus(generateMutations())
+			.plus(generateOperationInputs())
 			.plus(generateSelect())
-			.plus(generateInclude())
+//			.plus(generateInclude())
 			.plus(generateModelArgs())
 			.plus(generateModelListArgs())
 			.forEach { it.writeTo(config.outputDir) }
@@ -124,8 +122,7 @@ class Codegen(val config: CodegenConfig) {
 			Pair("take", Int::class.asClassName()),
 			Pair("skip", Int::class.asClassName()),
 			Pair("distinct", LIST.parameterizedBy(ClassName(config.packageNameEnums, model.name + "ScalarFieldEnum"))),
-			Pair("select", ClassName(config.packageNameSelections, model.name + "SelectInput")),
-			Pair("include", ClassName(config.packageNameSelections, model.name + "IncludeInput"))
+			Pair("select", ClassName(config.packageNameSelections, model.name + "SelectInput"))
 		)
 
 		val primaryConstructorSpec = FunSpec.constructorBuilder()
@@ -150,19 +147,12 @@ class Codegen(val config: CodegenConfig) {
 		val selectParameterSpec = ParameterSpec.builder("select", selectType).defaultValue("null")
 		val selectPropertySpec = PropertySpec.builder("select", selectType).initializer("select")
 
-		val includeType = ClassName(config.packageNameSelections, model.name + "IncludeInput").copy(nullable = true)
-		val includeParameterSpec = ParameterSpec.builder("include", includeType).defaultValue("null")
-		val includePropertySpec = PropertySpec.builder("include", includeType).initializer("include")
-
-		val primaryConstructorSpec = FunSpec.constructorBuilder()
-			.addParameter(selectParameterSpec.build())
-			.addParameter(includeParameterSpec.build())
+		val primaryConstructorSpec = FunSpec.constructorBuilder().addParameter(selectParameterSpec.build())
 
 		val classSpec = TypeSpec.classBuilder(name).addModifiers(KModifier.DATA)
 			.addAnnotation(serializableAnnotationSpec)
 			.primaryConstructor(primaryConstructorSpec.build())
 			.addProperty(selectPropertySpec.build())
-			.addProperty(includePropertySpec.build())
 
 		val fileSpec = FileSpec.builder(config.packageNameSelectionArgs, name).addType(classSpec.build())
 		fileSpec.build()
@@ -170,12 +160,25 @@ class Codegen(val config: CodegenConfig) {
 
 	private fun generateSelect() = dmmf.models.map { model ->
 		val name = model.name + "SelectInput"
-		val classSpec = TypeSpec.classBuilder(name).addModifiers(KModifier.DATA).addAnnotation(serializableAnnotationSpec)
+		val classSpec = TypeSpec.classBuilder(name)
+			.addModifiers(KModifier.DATA)
+			.addAnnotation(serializableAnnotationSpec)
 		val primaryConstructorSpec = FunSpec.constructorBuilder()
 
-		model.fields.filter { it.outputType.location != "outputObjectTypes" }.forEach { field ->
-			val parameterSpec = ParameterSpec.builder(field.name, Boolean::class).defaultValue("""true""")
-			val propertySpec = PropertySpec.builder(field.name, Boolean::class).initializer(field.name)
+		model.fields.forEach { field ->
+			var fieldType: TypeName = Boolean::class.asClassName()
+			var defaultValue = """true"""
+
+			if (field.outputType.location == "outputObjectTypes") {
+				fieldType = ClassName(
+					config.packageNameSelectionArgs,
+					field.outputType.type + if (field.outputType.isList) "ListArgs" else "Args"
+				).copy(nullable = true)
+				defaultValue = """null"""
+			}
+
+			val parameterSpec = ParameterSpec.builder(field.name, fieldType).defaultValue(defaultValue)
+			val propertySpec = PropertySpec.builder(field.name, fieldType).initializer(field.name)
 			primaryConstructorSpec.addParameter(parameterSpec.build())
 			classSpec.addProperty(propertySpec.build())
 		}
@@ -185,26 +188,14 @@ class Codegen(val config: CodegenConfig) {
 		fileSpec.build()
 	}
 
-	private fun generateOperation(operation: SchemaField, operationType: String): FileSpec {
-		val name = operation.name.toPascalCase() + "Operation"
-		val className = ClassName(config.packageNameOperations, name)
-		val classSpec = TypeSpec.classBuilder(className)
-			.addSuperinterface(GraphQLOperation::class)
-			.addAnnotation(serializableAnnotationSpec)
+	private fun generateOperationInputs() = dmmf.operationInputs.map { operation ->
+		val name = operation.name.toPascalCase() + "Input"
+		val className = ClassName(config.packageNameInputs, name)
+		val classSpec = TypeSpec.classBuilder(className).addAnnotation(serializableAnnotationSpec)
 
 		val primaryConstructorParamString = operation.args.mapNotNull {
 			if (it.isRequired && !it.inputType!!.isList) it.name else null
 		}.joinToString(", ")
-
-		val operationNamePropertySpec = PropertySpec.builder("name", String::class)
-			.addModifiers(KModifier.OVERRIDE)
-			.addAnnotation(AnnotationSpec.builder(Transient::class).build())
-			.initializer(""" "${operation.name.toCamelCase()}" """)
-
-		val operationTypePropertySpec = PropertySpec.builder("type", String::class)
-			.addModifiers(KModifier.OVERRIDE)
-			.addAnnotation(AnnotationSpec.builder(Transient::class).build())
-			.initializer(""" "$operationType" """)
 
 		val primaryConstructorSpec = FunSpec.constructorBuilder()
 		val secondaryConstructorSpec = FunSpec.constructorBuilder()
@@ -236,18 +227,12 @@ class Codegen(val config: CodegenConfig) {
 		val builderLambdaSpec = LambdaTypeName.get(className, emptyList(), Unit::class.asTypeName())
 		secondaryConstructorSpec.addParameter(ParameterSpec.builder("block", builderLambdaSpec).build())
 
-		classSpec.addProperty(operationTypePropertySpec.build())
-		classSpec.addProperty(operationNamePropertySpec.build())
 		classSpec.primaryConstructor(primaryConstructorSpec.build())
 		classSpec.addFunction(secondaryConstructorSpec.build())
 
-		val fileSpec = FileSpec.builder(config.packageNameOperations, name).addType(classSpec.build())
-		return fileSpec.build()
+		val fileSpec = FileSpec.builder(config.packageNameInputs, name).addType(classSpec.build())
+		fileSpec.build()
 	}
-
-	private fun generateQueries() = dmmf.queries.map { generateOperation(it, "query") }
-
-	private fun generateMutations() = dmmf.mutations.map { generateOperation(it, "mutation") }
 
 	private fun getType(location: String, type: String): TypeName = when (location) {
 		"scalar" -> when (type) {
