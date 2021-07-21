@@ -27,37 +27,34 @@ fun serializeInput(input: JsonElement, isEntry: Boolean = false): String {
 	}
 }
 
-fun serializeSelection(selection: JsonObject): String = selection
-	.mapNotNull {
-		when (it.value) {
-			is JsonNull -> null
-			is JsonArray -> null
-			is JsonPrimitive -> if ((it.value as JsonPrimitive).boolean) it.key else null
-			is JsonObject -> {
-				var selectionString = it.key
-				val args = buildJsonObject {
-					(it.value as JsonObject)
-						.filter { arg -> arg.value !is JsonNull && arg.key != "select" }
-						.forEach { arg -> put(arg.key, arg.value) }
-				}
-
-				println(args)
-				val selectionJson = it.value.jsonObject["select"] as JsonObject
-				if (args.isNotEmpty()) selectionString += " ${serializeInput(args, true)}"
-				selectionString += " ${serializeSelection(selectionJson)}"
-				selectionString
+fun serializeSelection(selection: JsonObject): String = selection.mapNotNull {
+	when (it.value) {
+		is JsonNull -> null
+		is JsonArray -> null
+		is JsonPrimitive -> if (it.value.jsonPrimitive.boolean) it.key else null
+		is JsonObject -> {
+			var selectionString = it.key
+			val args = buildJsonObject {
+				(it.value as JsonObject)
+					.filter { arg -> arg.value !is JsonNull && arg.key != "select" }
+					.forEach { arg -> put(arg.key, arg.value) }
 			}
+
+			val selectionJson = it.value.jsonObject["select"]!!.jsonObject
+			if (args.isNotEmpty()) selectionString += " ${serializeInput(args, true)}"
+			selectionString += " ${serializeSelection(selectionJson)}"
+			selectionString
 		}
 	}
-	.joinToString(separator = ", ", prefix = "{ ", postfix = " }")
+}.joinToString(separator = ", ", prefix = "{ ", postfix = " }")
 
 fun JsonPrimitive.getIfEnum(): String? {
 	if (content.startsWith("__enum__")) return content.substring(content.lastIndexOf("__") + 2)
 	return null
 }
 
-fun serializeRequest(request: Request): String {
-	val (type, name, operation, selection) = request
+fun Query.serialize(): String {
+	val (type, name, operation, selection) = this
 	return buildString {
 		append(type)
 		append(" { ")
@@ -70,7 +67,7 @@ fun serializeRequest(request: Request): String {
 	}
 }
 
-data class Request(
+data class Query(
 	val type: String,
 	val name: String,
 	val input: JsonObject,
