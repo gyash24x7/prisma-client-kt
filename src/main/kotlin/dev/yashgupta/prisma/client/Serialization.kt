@@ -32,19 +32,7 @@ fun serializeSelection(selection: JsonObject): String = selection.mapNotNull {
 		is JsonNull -> null
 		is JsonArray -> null
 		is JsonPrimitive -> if (it.value.jsonPrimitive.boolean) it.key else null
-		is JsonObject -> {
-			var selectionString = it.key
-			val args = buildJsonObject {
-				(it.value as JsonObject)
-					.filter { arg -> arg.value !is JsonNull && arg.key != "select" }
-					.forEach { arg -> put(arg.key, arg.value) }
-			}
-
-			val selectionJson = it.value.jsonObject["select"]!!.jsonObject
-			if (args.isNotEmpty()) selectionString += " ${serializeInput(args, true)}"
-			selectionString += " ${serializeSelection(selectionJson)}"
-			selectionString
-		}
+		is JsonObject -> "${it.key} ${serializeSelection(it.value as JsonObject)}"
 	}
 }.joinToString(separator = ", ", prefix = "{ ", postfix = " }")
 

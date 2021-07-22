@@ -8,12 +8,12 @@ import dev.yashgupta.prisma.client.Query
 import dev.yashgupta.prisma.client.json
 import dev.yashgupta.prisma.client.serialize
 import dev.yashgupta.prisma.generated.enums.TaskScalarFieldEnum
-import dev.yashgupta.prisma.generated.inputs.*
-import dev.yashgupta.prisma.generated.selections.TaskSelectInput
-import dev.yashgupta.prisma.generated.selections.UpdateSelectInput
-import dev.yashgupta.prisma.generated.selections.UserSelectInput
-import dev.yashgupta.prisma.generated.selections.args.UpdateListArgs
-import dev.yashgupta.prisma.generated.selections.args.UserArgs
+import dev.yashgupta.prisma.generated.inputs.DateTimeFilter
+import dev.yashgupta.prisma.generated.inputs.FindFirstTaskInput
+import dev.yashgupta.prisma.generated.inputs.TaskWhereInput
+import dev.yashgupta.prisma.generated.selections.TaskSelection
+import dev.yashgupta.prisma.generated.selections.UpdateSelection
+import dev.yashgupta.prisma.generated.selections.UserSelection
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Instant
 import kotlinx.serialization.json.JsonObject
@@ -28,16 +28,7 @@ fun main() {
 		distinct = listOf(TaskScalarFieldEnum.ID)
 	}
 
-	val select = TaskSelectInput(
-		createdBy = UserArgs(
-			select = UserSelectInput(
-				updates = UpdateListArgs(
-					select = UpdateSelectInput(),
-					where = UpdateWhereInput(id = StringFilter(equals = "update-id"))
-				)
-			)
-		)
-	)
+	val select = TaskSelection(createdBy = UserSelection(updates = UpdateSelection()))
 	val inputJson = json.encodeToJsonElement(findFirstTaskInput) as JsonObject
 	val selectionJson = json.encodeToJsonElement(select) as JsonObject
 
@@ -48,6 +39,8 @@ fun main() {
 		selection = selectionJson
 	)
 
+	println(json.encodeToJsonElement(inputJson))
+	println(json.encodeToJsonElement(selectionJson))
 	println(query.serialize())
 	val prisma = PrismaClient()
 	runBlocking {

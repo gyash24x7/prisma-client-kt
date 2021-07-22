@@ -23,10 +23,7 @@ class Codegen(val config: CodegenConfig) {
 			.plus(generateOutputTypes())
 			.plus(generateInputTypes())
 			.plus(generateOperationInputs())
-			.plus(generateSelect())
-//			.plus(generateInclude())
-			.plus(generateModelArgs())
-			.plus(generateModelListArgs())
+			.plus(generateSelections())
 			.forEach { it.writeTo(config.outputDir) }
 	}
 
@@ -87,100 +84,29 @@ class Codegen(val config: CodegenConfig) {
 		generateType(outputType.name, fields, config.packageNameOutputs)
 	}
 
-	private fun generateInclude() = dmmf.models
-		.filter { it.fields.any { field -> field.outputType.location == "outputObjectTypes" } }
-		.map { model ->
-			val name = model.name + "IncludeInput"
-			val primaryConstructorSpec = FunSpec.constructorBuilder()
-			val classSpec = TypeSpec.classBuilder(name).addModifiers(KModifier.DATA).addAnnotation(serializableAnnotationSpec)
+	private fun generateSelections() = dmmf.outputs.map { output ->
+		val name = "${output.name}Selection"
+		val className = ClassName(config.packageNameSelections, name)
+		val primaryConstructorSpec = FunSpec.constructorBuilder()
+		val classSpec = TypeSpec.classBuilder(className).addModifiers(KModifier.DATA)
+			.addAnnotation(serializableAnnotationSpec)
 
-			model.fields.filter { it.outputType.location == "outputObjectTypes" }.forEach { field ->
-				val fieldBaseType = ClassName(
-					config.packageNameSelectionArgs,
-					field.outputType.type + if (field.outputType.isList) "ListArgs" else "Args"
-				)
-				var fieldType = if (field.outputType.isList) LIST.parameterizedBy(fieldBaseType) else fieldBaseType
-				fieldType = fieldType.copy(nullable = true)
-
-				val parameterSpec = ParameterSpec.builder(field.name, fieldType).defaultValue("null")
-				val propertySpec = PropertySpec.builder(field.name, fieldType).initializer(field.name)
-				primaryConstructorSpec.addParameter(parameterSpec.build())
-				classSpec.addProperty(propertySpec.build())
+		output.fields.forEach { schemaField ->
+			lateinit var propertySpec: PropertySpec.Builder
+			lateinit var parameterSpec: ParameterSpec.Builder
+			if (schemaField.outputType.location == "scalar" || schemaField.outputType.location == "enumTypes") {
+				parameterSpec = ParameterSpec.builder(schemaField.name, Boolean::class.asClassName()).defaultValue("""true""")
+				propertySpec = PropertySpec.builder(schemaField.name, Boolean::class.asClassName()).mutable()
+					.initializer(schemaField.name)
+			} else {
+				val typeName = ClassName(config.packageNameSelections, "${schemaField.outputType.type}Selection")
+					.copy(nullable = true)
+				parameterSpec = ParameterSpec.builder(schemaField.name, typeName).defaultValue("""null""")
+				propertySpec = PropertySpec.builder(schemaField.name, typeName).mutable().initializer(schemaField.name)
 			}
 
-			classSpec.primaryConstructor(primaryConstructorSpec.build())
-			val fileSpec = FileSpec.builder(config.packageNameSelections, name).addType(classSpec.build())
-			fileSpec.build()
-		}
-
-	private fun generateModelListArgs() = dmmf.models.map { model ->
-		val name = model.name + "ListArgs"
-		val argMap = mapOf(
-			Pair("where", ClassName(config.packageNameInputs, model.name + "WhereInput")),
-			Pair("orderBy", ClassName(config.packageNameInputs, model.name + "OrderByInput")),
-			Pair("cursor", ClassName(config.packageNameInputs, model.name + "WhereUniqueInput")),
-			Pair("take", Int::class.asClassName()),
-			Pair("skip", Int::class.asClassName()),
-			Pair("distinct", LIST.parameterizedBy(ClassName(config.packageNameEnums, model.name + "ScalarFieldEnum"))),
-			Pair("select", ClassName(config.packageNameSelections, model.name + "SelectInput"))
-		)
-
-		val primaryConstructorSpec = FunSpec.constructorBuilder()
-		val classSpec = TypeSpec.classBuilder(name).addModifiers(KModifier.DATA).addAnnotation(serializableAnnotationSpec)
-
-		argMap.forEach { (argName, argType) ->
-			val parameterSpec = ParameterSpec.builder(argName, argType.copy(nullable = true)).defaultValue("null")
-			val propertySpec = PropertySpec.builder(argName, argType.copy(nullable = true)).initializer(argName)
-			primaryConstructorSpec.addParameter(parameterSpec.build())
 			classSpec.addProperty(propertySpec.build())
-		}
-
-		classSpec.primaryConstructor(primaryConstructorSpec.build())
-		val fileSpec = FileSpec.builder(config.packageNameSelectionArgs, name).addType(classSpec.build())
-		fileSpec.build()
-	}
-
-	private fun generateModelArgs() = dmmf.models.map { model ->
-		val name = model.name + "Args"
-
-		val selectType = ClassName(config.packageNameSelections, model.name + "SelectInput").copy(nullable = true)
-		val selectParameterSpec = ParameterSpec.builder("select", selectType).defaultValue("null")
-		val selectPropertySpec = PropertySpec.builder("select", selectType).initializer("select")
-
-		val primaryConstructorSpec = FunSpec.constructorBuilder().addParameter(selectParameterSpec.build())
-
-		val classSpec = TypeSpec.classBuilder(name).addModifiers(KModifier.DATA)
-			.addAnnotation(serializableAnnotationSpec)
-			.primaryConstructor(primaryConstructorSpec.build())
-			.addProperty(selectPropertySpec.build())
-
-		val fileSpec = FileSpec.builder(config.packageNameSelectionArgs, name).addType(classSpec.build())
-		fileSpec.build()
-	}
-
-	private fun generateSelect() = dmmf.models.map { model ->
-		val name = model.name + "SelectInput"
-		val classSpec = TypeSpec.classBuilder(name)
-			.addModifiers(KModifier.DATA)
-			.addAnnotation(serializableAnnotationSpec)
-		val primaryConstructorSpec = FunSpec.constructorBuilder()
-
-		model.fields.forEach { field ->
-			var fieldType: TypeName = Boolean::class.asClassName()
-			var defaultValue = """true"""
-
-			if (field.outputType.location == "outputObjectTypes") {
-				fieldType = ClassName(
-					config.packageNameSelectionArgs,
-					field.outputType.type + if (field.outputType.isList) "ListArgs" else "Args"
-				).copy(nullable = true)
-				defaultValue = """null"""
-			}
-
-			val parameterSpec = ParameterSpec.builder(field.name, fieldType).defaultValue(defaultValue)
-			val propertySpec = PropertySpec.builder(field.name, fieldType).initializer(field.name)
 			primaryConstructorSpec.addParameter(parameterSpec.build())
-			classSpec.addProperty(propertySpec.build())
 		}
 
 		classSpec.primaryConstructor(primaryConstructorSpec.build())
