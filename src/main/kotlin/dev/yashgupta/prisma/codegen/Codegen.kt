@@ -68,8 +68,10 @@ class Codegen(val config: CodegenConfig) {
 
 	private fun generateInputTypes() = dmmf.inputs.map { inputType ->
 		val fields = inputType.fields.map { field ->
-			val type = getType(field.inputType!!.location, field.inputType!!.type)
-			Field(name = field.name, nullable = !field.isRequired, type = type)
+			var returnType = getType(field.inputType!!.location, field.inputType!!.type)
+			if (field.inputType!!.isList) returnType = LIST.parameterizedBy(returnType)
+			returnType = returnType.copy(nullable = !field.isRequired)
+			Field(name = field.name, nullable = !field.isRequired, type = returnType)
 		}
 		generateType(inputType.name, fields, config.packageNameInputs)
 	}
@@ -116,48 +118,14 @@ class Codegen(val config: CodegenConfig) {
 
 	private fun generateOperationInputs() = dmmf.operationInputs.map { operation ->
 		val name = operation.name.toPascalCase() + "Input"
-		val className = ClassName(config.packageNameInputs, name)
-		val classSpec = TypeSpec.classBuilder(className).addAnnotation(serializableAnnotationSpec)
 
-		val primaryConstructorParamString = operation.args.mapNotNull {
-			if (it.isRequired && !it.inputType!!.isList) it.name else null
-		}.joinToString(", ")
-
-		val primaryConstructorSpec = FunSpec.constructorBuilder()
-		val secondaryConstructorSpec = FunSpec.constructorBuilder()
-			.addStatement("""val operation = ${name}(${primaryConstructorParamString}).apply(block)""")
-			.callThisConstructor(primaryConstructorParamString)
-
-		operation.args.forEach { arg ->
-			var returnType = getType(arg.inputType!!.location, arg.inputType!!.type)
-			if (arg.inputType!!.isList) returnType = LIST.parameterizedBy(returnType)
-			returnType = returnType.copy(nullable = !arg.isRequired)
-
-			val argPropertySpec = PropertySpec.builder(arg.name, returnType).mutable(true)
-
-			if (!arg.isRequired) {
-				argPropertySpec.initializer("""null""")
-				secondaryConstructorSpec.addStatement("""${arg.name} = operation.${arg.name}""")
-			} else if (arg.inputType!!.isList) {
-				argPropertySpec.initializer("""emptyList()""")
-			} else {
-				argPropertySpec.initializer(arg.name)
-				val argParamSpec = ParameterSpec.builder(arg.name, returnType)
-				primaryConstructorSpec.addParameter(argParamSpec.build())
-				secondaryConstructorSpec.addParameter(argParamSpec.build())
-			}
-
-			classSpec.addProperty(argPropertySpec.build())
+		val fields = operation.args.map { field ->
+			var returnType = getType(field.inputType!!.location, field.inputType!!.type)
+			if (field.inputType!!.isList) returnType = LIST.parameterizedBy(returnType)
+			returnType = returnType.copy(nullable = !field.isRequired)
+			Field(name = field.name, nullable = !field.isRequired, type = returnType)
 		}
-
-		val builderLambdaSpec = LambdaTypeName.get(className, emptyList(), Unit::class.asTypeName())
-		secondaryConstructorSpec.addParameter(ParameterSpec.builder("block", builderLambdaSpec).build())
-
-		classSpec.primaryConstructor(primaryConstructorSpec.build())
-		classSpec.addFunction(secondaryConstructorSpec.build())
-
-		val fileSpec = FileSpec.builder(config.packageNameInputs, name).addType(classSpec.build())
-		fileSpec.build()
+		generateType(name, fields, config.packageNameOperationInputs)
 	}
 
 	private fun getType(location: String, type: String): TypeName = when (location) {

@@ -24,11 +24,7 @@ class PrismaClient {
 
 	suspend fun execute(query: Query): JsonElement? {
 		val response = client.request<JsonElement> {
-			url {
-				host = "localhost"
-				port = 4466
-				protocol = URLProtocol.HTTP
-			}
+			url { port = 4466 }
 			method = HttpMethod.Post
 			body = Request(query.serialize())
 			headers {

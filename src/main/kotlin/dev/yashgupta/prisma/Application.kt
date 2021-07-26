@@ -7,26 +7,23 @@ import dev.yashgupta.prisma.client.PrismaClient
 import dev.yashgupta.prisma.client.Query
 import dev.yashgupta.prisma.client.json
 import dev.yashgupta.prisma.client.serialize
-import dev.yashgupta.prisma.generated.enums.TaskScalarFieldEnum
 import dev.yashgupta.prisma.generated.inputs.DateTimeFilter
-import dev.yashgupta.prisma.generated.inputs.FindFirstTaskInput
 import dev.yashgupta.prisma.generated.inputs.TaskWhereInput
+import dev.yashgupta.prisma.generated.inputs.operations.FindFirstTaskInput
 import dev.yashgupta.prisma.generated.selections.TaskSelection
 import dev.yashgupta.prisma.generated.selections.UpdateSelection
 import dev.yashgupta.prisma.generated.selections.UserSelection
-import kotlinx.coroutines.runBlocking
-import kotlinx.datetime.Instant
+import kotlinx.datetime.Clock
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.encodeToJsonElement
 
 fun main() {
-	val dmmfString = object {}::class.java.classLoader.getResource("schema.json")?.readText() ?: ""
-
+//	val dmmfString = object {}::class.java.classLoader.getResource("schema.json")?.readText() ?: ""
 //	Codegen(config = CodegenConfig(dmmf = dmmfString)).generate()
-	val findFirstTaskInput = FindFirstTaskInput {
-		where = TaskWhereInput(createdOn = DateTimeFilter(equals = Instant.parse("2021-07-17T17:19:18.087Z")))
-		distinct = listOf(TaskScalarFieldEnum.ID)
-	}
+	
+	val findFirstTaskInput = FindFirstTaskInput(
+		where = TaskWhereInput(createdOn = DateTimeFilter(equals = Clock.System.now()))
+	)
 
 	val select = TaskSelection(createdBy = UserSelection(updates = UpdateSelection()))
 	val inputJson = json.encodeToJsonElement(findFirstTaskInput) as JsonObject
@@ -43,8 +40,8 @@ fun main() {
 	println(json.encodeToJsonElement(selectionJson))
 	println(query.serialize())
 	val prisma = PrismaClient()
-	runBlocking {
-		val response = prisma.execute(query)
-		println(response)
-	}
+//	runBlocking {
+//		val response = prisma.execute(query)
+//		println(response)
+//	}
 }
