@@ -16,4 +16,5 @@ data class CodegenConfig(
 	val packageNameSelections: String = "$packageName.selections"
 	val packageNameSelectionArgs: String = "$packageNameSelections.args"
 	val packageNameOperationInputs: String = "$packageNameInputs.operations"
+	val packageNameOperations: String = "$packageName.operations"
 }

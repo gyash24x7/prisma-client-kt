@@ -27,6 +27,14 @@ fun serializeInput(input: JsonElement, isEntry: Boolean = false): String {
 	}
 }
 
+fun sanitizeInput(input: JsonObject) = buildJsonObject {
+	input.forEach {
+		if (it.value !is JsonNull) {
+			put(it.key, it.value)
+		}
+	}
+}
+
 fun serializeSelection(selection: JsonObject): String = selection.mapNotNull {
 	when (it.value) {
 		is JsonNull -> null
@@ -42,13 +50,15 @@ fun JsonPrimitive.getIfEnum(): String? {
 }
 
 fun Query.serialize(): String {
-	val (type, name, operation, selection) = this
+	var (type, name, input, selection) = this
+	input = sanitizeInput(input)
+
 	return buildString {
 		append(type)
 		append(" { ")
 		append(name)
-		if (operation.isNotEmpty()) {
-			append(serializeInput(operation, true))
+		if (input.isNotEmpty()) {
+			append(serializeInput(input, true))
 		}
 		append(serializeSelection(selection))
 		append(" }")

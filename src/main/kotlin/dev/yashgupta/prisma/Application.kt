@@ -4,44 +4,19 @@ package dev.yashgupta.prisma
 //import dev.yashgupta.prisma.codegen.CodegenConfig
 
 import dev.yashgupta.prisma.client.PrismaClient
-import dev.yashgupta.prisma.client.Query
-import dev.yashgupta.prisma.client.json
-import dev.yashgupta.prisma.client.serialize
-import dev.yashgupta.prisma.generated.inputs.DateTimeFilter
-import dev.yashgupta.prisma.generated.inputs.TaskWhereInput
-import dev.yashgupta.prisma.generated.inputs.operations.FindFirstTaskInput
+import dev.yashgupta.prisma.generated.client.task
 import dev.yashgupta.prisma.generated.selections.TaskSelection
-import dev.yashgupta.prisma.generated.selections.UpdateSelection
-import dev.yashgupta.prisma.generated.selections.UserSelection
-import kotlinx.datetime.Clock
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.encodeToJsonElement
+import kotlinx.coroutines.runBlocking
 
 fun main() {
 //	val dmmfString = object {}::class.java.classLoader.getResource("schema.json")?.readText() ?: ""
 //	Codegen(config = CodegenConfig(dmmf = dmmfString)).generate()
-	
-	val findFirstTaskInput = FindFirstTaskInput(
-		where = TaskWhereInput(createdOn = DateTimeFilter(equals = Clock.System.now()))
-	)
 
-	val select = TaskSelection(createdBy = UserSelection(updates = UpdateSelection()))
-	val inputJson = json.encodeToJsonElement(findFirstTaskInput) as JsonObject
-	val selectionJson = json.encodeToJsonElement(select) as JsonObject
-
-	val query = Query(
-		name = "findFirstTask",
-		type = "query",
-		input = inputJson,
-		selection = selectionJson
-	)
-
-	println(json.encodeToJsonElement(inputJson))
-	println(json.encodeToJsonElement(selectionJson))
-	println(query.serialize())
 	val prisma = PrismaClient()
-//	runBlocking {
-//		val response = prisma.execute(query)
-//		println(response)
-//	}
+	runBlocking {
+		val response = prisma.task.findFirst(
+			select = TaskSelection(id = true)
+		)
+		println(response)
+	}
 }

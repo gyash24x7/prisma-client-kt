@@ -2,6 +2,7 @@ package dev.yashgupta.prisma.codegen
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
 
 @Serializable
 data class DmmfDoc(
@@ -31,14 +32,6 @@ data class DmmfDoc(
 			}
 		}
 
-	val operationInputs = schema.outputObjectTypes.prisma.plus(schema.outputObjectTypes.model)
-		.filter { it.name == "Query" || it.name == "Mutation" }
-		.flatMap {
-			it.fields.map { field ->
-				field.apply { args = args.map { arg -> arg.apply { inputType = inputTypes[0] } } }
-			}
-		}
-
 	val queries = schema.outputObjectTypes.prisma.plus(schema.outputObjectTypes.model)
 		.filter { it.name == "Query" }
 		.flatMap {
@@ -55,19 +48,13 @@ data class DmmfDoc(
 			}
 		}
 
-	@OptIn(ExperimentalStdlibApi::class)
-	val modelOperationMap = buildMap<String, List<SchemaField>> {
-		models.forEach { model ->
-			val modelOperations = queries.plus(mutations).filter { it.name.endsWith(model.name) }
-			put(model.name, modelOperations)
-		}
-	}
+	val operations = queries + mutations
 }
 
 
 @Serializable
 data class Mappings(
-	var modelOperations: List<ModelMapping>,
+	var modelOperations: List<JsonObject>,
 	var otherOperations: OtherOperationMappings
 )
 

@@ -2,11 +2,14 @@ package dev.yashgupta.prisma.codegen
 
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
+import dev.yashgupta.prisma.client.PrismaClient
+import dev.yashgupta.prisma.client.Query
 import dev.yashgupta.prisma.client.json
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.*
 import net.pearx.kasechange.toCamelCase
 import net.pearx.kasechange.toPascalCase
 import net.pearx.kasechange.toScreamingSnakeCase
@@ -24,6 +27,7 @@ class Codegen(val config: CodegenConfig) {
 			.plus(generateInputTypes())
 			.plus(generateOperationInputs())
 			.plus(generateSelections())
+			.plus(generateModelClients())
 			.forEach { it.writeTo(config.outputDir) }
 	}
 
@@ -41,8 +45,7 @@ class Codegen(val config: CodegenConfig) {
 			)
 		}
 
-		val fileSpec = FileSpec.builder(config.packageNameEnums, schemaEnum.name).addType(enumSpec.build())
-		fileSpec.build()
+		FileSpec.builder(config.packageNameEnums, schemaEnum.name).addType(enumSpec.build()).build()
 	}
 
 	private fun generateType(name: String, fields: List<Field>, packageName: String): FileSpec {
@@ -62,8 +65,7 @@ class Codegen(val config: CodegenConfig) {
 
 		classSpec.primaryConstructor(constructorSpec.build())
 
-		val fileSpec = FileSpec.builder(packageName, name).addType(classSpec.build())
-		return fileSpec.build()
+		return FileSpec.builder(packageName, name).addType(classSpec.build()).build()
 	}
 
 	private fun generateInputTypes() = dmmf.inputs.map { inputType ->
@@ -93,30 +95,41 @@ class Codegen(val config: CodegenConfig) {
 		val classSpec = TypeSpec.classBuilder(className).addModifiers(KModifier.DATA)
 			.addAnnotation(serializableAnnotationSpec)
 
-		output.fields.forEach { schemaField ->
+		val defaultConstructorValues = mutableListOf<String>()
+
+		output.fields.forEach { field ->
+			val outputType = field.outputType
+
 			lateinit var propertySpec: PropertySpec.Builder
 			lateinit var parameterSpec: ParameterSpec.Builder
-			if (schemaField.outputType.location == "scalar" || schemaField.outputType.location == "enumTypes") {
-				parameterSpec = ParameterSpec.builder(schemaField.name, Boolean::class.asClassName()).defaultValue("""true""")
-				propertySpec = PropertySpec.builder(schemaField.name, Boolean::class.asClassName()).mutable()
-					.initializer(schemaField.name)
+			if (outputType.location == "scalar" || outputType.location == "enumTypes") {
+				parameterSpec = ParameterSpec.builder(field.name, Boolean::class.asClassName()).defaultValue("""false""")
+				propertySpec = PropertySpec.builder(field.name, Boolean::class.asClassName()).initializer(field.name)
+				defaultConstructorValues += "${field.name} = true"
 			} else {
-				val typeName = ClassName(config.packageNameSelections, "${schemaField.outputType.type}Selection")
-					.copy(nullable = true)
-				parameterSpec = ParameterSpec.builder(schemaField.name, typeName).defaultValue("""null""")
-				propertySpec = PropertySpec.builder(schemaField.name, typeName).mutable().initializer(schemaField.name)
+				val typeName = ClassName(config.packageNameSelections, "${outputType.type}Selection").copy(nullable = true)
+				parameterSpec = ParameterSpec.builder(field.name, typeName).defaultValue("""null""")
+				propertySpec = PropertySpec.builder(field.name, typeName).mutable().initializer(field.name)
+				defaultConstructorValues += "${field.name} = null"
 			}
 
 			classSpec.addProperty(propertySpec.build())
 			primaryConstructorSpec.addParameter(parameterSpec.build())
 		}
 
-		classSpec.primaryConstructor(primaryConstructorSpec.build())
-		val fileSpec = FileSpec.builder(config.packageNameSelections, name).addType(classSpec.build())
-		fileSpec.build()
+		val companionSpec = TypeSpec.companionObjectBuilder()
+			.addFunction(
+				FunSpec.builder("getDefault")
+					.returns(className)
+					.addStatement("return %T( ${defaultConstructorValues.joinToString(", ")} )", className)
+					.build()
+			)
+
+		classSpec.primaryConstructor(primaryConstructorSpec.build()).addType(companionSpec.build())
+		FileSpec.builder(config.packageNameSelections, name).addType(classSpec.build()).build()
 	}
 
-	private fun generateOperationInputs() = dmmf.operationInputs.map { operation ->
+	private fun generateOperationInputs() = dmmf.operations.map { operation ->
 		val name = operation.name.toPascalCase() + "Input"
 
 		val fields = operation.args.map { field ->
@@ -126,6 +139,99 @@ class Codegen(val config: CodegenConfig) {
 			Field(name = field.name, nullable = !field.isRequired, type = returnType)
 		}
 		generateType(name, fields, config.packageNameOperationInputs)
+	}
+
+	private fun generateModelClients() = dmmf.mappings.modelOperations.map {
+		val modelName = it["model"]!!.jsonPrimitive.content.toPascalCase()
+		val name = "${modelName}Client"
+		val className = ClassName(config.packageNameClient, name)
+		val constructorSpec = FunSpec.constructorBuilder()
+			.addParameter(
+				ParameterSpec.builder("prismaClient", PrismaClient::class)
+					.addModifiers(KModifier.PRIVATE)
+					.build()
+			)
+
+		val classSpec = TypeSpec.classBuilder(className)
+			.addProperty(
+				PropertySpec.builder("prismaClient", PrismaClient::class)
+					.addModifiers(KModifier.PRIVATE)
+					.initializer("prismaClient")
+					.build()
+			)
+			.primaryConstructor(constructorSpec.build())
+
+		it.entries.filterNot { entry -> entry.key == "model" || entry.value is JsonNull }
+			.forEach { entry ->
+				val operation = dmmf.operations.find { input -> (entry.value as JsonPrimitive).content == input.name }
+				val operationFunSpec = generateOperationFun(operation!!, modelName)
+				classSpec.addFunction(operationFunSpec)
+			}
+
+		val modelPropertySpec = PropertySpec.builder(modelName.toCamelCase(), className)
+			.receiver(PrismaClient::class)
+			.getter(FunSpec.getterBuilder().addStatement("return %T(this)", className).build())
+
+		FileSpec.builder(config.packageNameClient, name)
+			.addType(classSpec.build())
+			.addProperty(modelPropertySpec.build())
+			.build()
+	}
+
+	private fun generateOperationFun(operation: SchemaField, modelName: String): FunSpec {
+		val operationName = getOperationName(operation, modelName)
+		val funSpec = FunSpec.builder(operationName).addModifiers(KModifier.SUSPEND)
+
+		operation.args.forEach {
+			var returnType = getType(it.inputType!!.location, it.inputType!!.type)
+			if (it.inputType!!.isList) returnType = LIST.parameterizedBy(returnType)
+			returnType = returnType.copy(nullable = !it.isRequired)
+
+			val paramSpec = ParameterSpec.builder(it.name, returnType)
+			if (!it.isRequired) paramSpec.defaultValue("null")
+
+			funSpec.addParameter(paramSpec.build())
+		}
+
+		val selectionClassName = ClassName(config.packageNameSelections, operation.outputType.type + "Selection")
+		val selectionParameterSpec = ParameterSpec.builder("select", selectionClassName.copy(nullable = true))
+			.defaultValue("null")
+
+		funSpec.addParameter(selectionParameterSpec.build())
+
+		funSpec.addStatement(
+			"val input = %M.%M(%T( ${operation.args.joinToString(", ") { it.name }} )) as %T",
+			MemberName("dev.yashgupta.prisma.client", "json"),
+			MemberName("kotlinx.serialization.json", "encodeToJsonElement"),
+			ClassName(config.packageNameOperationInputs, operation.name.toPascalCase() + "Input"),
+			JsonObject::class.asClassName()
+		)
+		funSpec.addStatement(
+			"val selection = %M.%M(select?:%T.getDefault()) as %T",
+			MemberName("dev.yashgupta.prisma.client", "json"),
+			MemberName("kotlinx.serialization.json", "encodeToJsonElement"),
+			selectionClassName,
+			JsonObject::class.asClassName()
+		)
+		funSpec.addStatement(
+			"""val query = %T( "${getOperationType(operation.name)}", "${operation.name}", input, selection )""",
+			Query::class
+		)
+
+		funSpec.returns(JsonElement::class.asTypeName().copy(nullable = true))
+			.addStatement("return prismaClient.execute(query)")
+
+		return funSpec.build()
+	}
+
+	private fun getOperationType(operationName: String): String {
+		val queryOperation = dmmf.queries.find { it.name == operationName }
+		return if (queryOperation != null) "query" else "mutation"
+	}
+
+	private fun getOperationName(operation: SchemaField, modelName: String): String {
+		val modelIndex = operation.name.indexOf(modelName)
+		return operation.name.substring(0, modelIndex)
 	}
 
 	private fun getType(location: String, type: String): TypeName = when (location) {
