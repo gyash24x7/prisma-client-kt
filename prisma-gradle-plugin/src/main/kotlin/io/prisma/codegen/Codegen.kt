@@ -1,10 +1,10 @@
-package dev.yashgupta.prisma.codegen
+package io.prisma.codegen
 
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
-import dev.yashgupta.prisma.client.PrismaClient
-import dev.yashgupta.prisma.client.Query
-import dev.yashgupta.prisma.client.json
+import io.prisma.client.PrismaClient
+import io.prisma.client.Query
+import io.prisma.client.json
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -14,10 +14,10 @@ import net.pearx.kasechange.toCamelCase
 import net.pearx.kasechange.toPascalCase
 import net.pearx.kasechange.toScreamingSnakeCase
 
-class Codegen(val config: CodegenConfig) {
+class Codegen(private val config: CodegenConfig) {
 
-	val dmmf: DmmfDoc = json.decodeFromString(config.dmmf)
-	val serializableAnnotationSpec = AnnotationSpec.builder(Serializable::class).build()
+	private val dmmf: DmmfDoc = json.decodeFromString(config.dmmf)
+	private val serializableAnnotationSpec = AnnotationSpec.builder(Serializable::class).build()
 
 	data class Field(val name: String, val type: TypeName, val nullable: Boolean)
 

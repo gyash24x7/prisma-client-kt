@@ -1,4 +1,4 @@
-package dev.yashgupta.prisma.codegen
+package io.prisma.codegen
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement

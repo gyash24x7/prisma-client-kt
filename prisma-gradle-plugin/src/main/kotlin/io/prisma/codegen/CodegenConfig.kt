@@ -1,4 +1,4 @@
-package dev.yashgupta.prisma.codegen
+package io.prisma.codegen
 
 import java.nio.file.Path
 import java.nio.file.Paths

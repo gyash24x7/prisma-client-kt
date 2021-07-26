@@ -1,4 +1,4 @@
-package dev.yashgupta.prisma.client
+package io.prisma.client
 
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
@@ -12,7 +12,7 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.jsonObject
 
 class PrismaClient {
-	val client = HttpClient(CIO) {
+	private val client = HttpClient(CIO) {
 		install(Logging) {
 			level = LogLevel.BODY
 			logger = Logger.DEFAULT

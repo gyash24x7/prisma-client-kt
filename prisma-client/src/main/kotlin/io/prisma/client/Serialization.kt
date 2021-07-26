@@ -1,4 +1,4 @@
-package dev.yashgupta.prisma.client
+package io.prisma.client
 
 import kotlinx.serialization.json.*
 
