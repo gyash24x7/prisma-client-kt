@@ -1,6 +1,7 @@
 plugins {
 	kotlin("jvm")
 	kotlin("plugin.serialization")
+	`maven-publish`
 }
 
 dependencies {
@@ -12,4 +13,15 @@ dependencies {
 	implementation("io.ktor:ktor-client-cio:1.6.0")
 	implementation("io.ktor:ktor-client-logging-jvm:1.6.0")
 	implementation("io.ktor:ktor-client-serialization:1.6.0")
+}
+
+publishing {
+	publications {
+		create<MavenPublication>("maven") {
+			groupId = "io.prisma"
+			artifactId = "prisma-client"
+
+			from(components["java"])
+		}
+	}
 }

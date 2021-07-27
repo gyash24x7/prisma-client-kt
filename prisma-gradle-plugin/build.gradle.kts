@@ -1,6 +1,8 @@
 plugins {
 	kotlin("jvm")
 	kotlin("plugin.serialization")
+	`java-gradle-plugin`
+	`maven-publish`
 }
 
 dependencies {
@@ -11,4 +13,13 @@ dependencies {
 	implementation("com.squareup:kotlinpoet:1.9.0")
 	implementation("net.pearx.kasechange:kasechange:1.3.0")
 	implementation(project(":prisma-client"))
+}
+
+gradlePlugin {
+	plugins {
+		create("prismaPlugin") {
+			id = "io.prisma.codegen"
+			implementationClass = "io.prisma.codegen.PrismaPlugin"
+		}
+	}
 }
