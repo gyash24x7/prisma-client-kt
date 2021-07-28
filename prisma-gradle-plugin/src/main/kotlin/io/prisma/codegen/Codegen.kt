@@ -13,6 +13,7 @@ import kotlinx.serialization.json.*
 import net.pearx.kasechange.toCamelCase
 import net.pearx.kasechange.toPascalCase
 import net.pearx.kasechange.toScreamingSnakeCase
+import java.nio.file.Paths
 
 class Codegen(private val config: CodegenConfig) {
 
@@ -28,7 +29,7 @@ class Codegen(private val config: CodegenConfig) {
 			.plus(generateOperationInputs())
 			.plus(generateSelections())
 			.plus(generateModelClients())
-			.forEach { it.writeTo(config.outputDir) }
+			.forEach { it.writeTo(Paths.get(config.outputDir)) }
 	}
 
 	private fun generateEnums() = dmmf.enums.map { schemaEnum ->

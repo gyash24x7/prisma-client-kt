@@ -1,9 +1,6 @@
 package io.prisma.codegen
 
-import java.nio.file.Path
-import java.nio.file.Paths
-
-data class CodegenConfig(val dmmf: String = "", val outputDir: Path = Paths.get("build", "generated")) {
+data class CodegenConfig(val dmmf: String = "", val outputDir: String = "") {
 	private val packageName: String = "io.prisma.generated"
 	val packageNameClient: String = "$packageName.client"
 	val packageNameEnums: String = "$packageName.enums"
