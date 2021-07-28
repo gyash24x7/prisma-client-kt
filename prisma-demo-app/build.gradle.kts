@@ -6,3 +6,7 @@ plugins {
 dependencies {
 	implementation(kotlin("stdlib"))
 }
+
+prisma {
+	schemaPath = "src/main/resources/schema.prisma"
+}
