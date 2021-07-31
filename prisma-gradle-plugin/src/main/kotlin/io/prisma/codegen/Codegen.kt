@@ -202,14 +202,14 @@ class Codegen(private val config: CodegenConfig) {
 
 		funSpec.addStatement(
 			"val input = %M.%M(%T( ${operation.args.joinToString(", ") { it.name }} )) as %T",
-			MemberName("dev.yashgupta.prisma.client", "json"),
+			MemberName("io.prisma.client", "json"),
 			MemberName("kotlinx.serialization.json", "encodeToJsonElement"),
 			ClassName(config.packageNameOperationInputs, operation.name.toPascalCase() + "Input"),
 			JsonObject::class.asClassName()
 		)
 		funSpec.addStatement(
 			"val selection = %M.%M(select?:%T.getDefault()) as %T",
-			MemberName("dev.yashgupta.prisma.client", "json"),
+			MemberName("io.prisma.client", "json"),
 			MemberName("kotlinx.serialization.json", "encodeToJsonElement"),
 			selectionClassName,
 			JsonObject::class.asClassName()
