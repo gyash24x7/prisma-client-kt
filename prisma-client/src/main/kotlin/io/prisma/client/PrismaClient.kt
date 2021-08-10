@@ -9,6 +9,7 @@ import io.ktor.client.request.*
 import io.ktor.http.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.jsonObject
 import java.io.IOException
 import java.net.ServerSocket
@@ -21,7 +22,7 @@ enum class Os {
 
 class PrismaClient {
 
-	private var _port = 0
+	var port = 0
 	private lateinit var _process: Process
 
 	private val os: Os?
@@ -48,7 +49,7 @@ class PrismaClient {
 		})
 	}
 
-	private val client = HttpClient(CIO) {
+	val client = HttpClient(CIO) {
 		install(Logging) {
 			level = LogLevel.BODY
 			logger = Logger.DEFAULT
@@ -60,7 +61,7 @@ class PrismaClient {
 
 	private fun findFreePort() {
 		var socket: ServerSocket? = null
-		_port = try {
+		port = try {
 			socket = ServerSocket(0)
 			socket.reuseAddress = true
 			socket.localPort
@@ -79,7 +80,7 @@ class PrismaClient {
 	private fun connect() {
 		val dmlPath = Path(System.getProperty("user.dir"), ".prisma", "schema.prisma")
 		val queryEngineBinaryPath = Path(System.getProperty("user.dir"), ".prisma", queryEngineBinaryName)
-		_process = ProcessBuilder("$queryEngineBinaryPath", "--datamodel-path", "$dmlPath", "-g", "--port", "$_port")
+		_process = ProcessBuilder("$queryEngineBinaryPath", "--datamodel-path", "$dmlPath", "-g", "--port", "$port")
 			.start()
 	}
 
@@ -88,9 +89,9 @@ class PrismaClient {
 		_process.destroyForcibly()
 	}
 
-	suspend fun execute(query: Query): JsonElement? {
+	suspend inline fun <reified T> execute(query: Query): T? {
 		val response = client.request<JsonElement> {
-			url { port = _port }
+			url { port = this@PrismaClient.port }
 			method = HttpMethod.Post
 			body = Request(query.serialize())
 			headers {
@@ -98,7 +99,10 @@ class PrismaClient {
 			}
 		}
 
-		return response.jsonObject["data"]?.jsonObject?.get(query.name)
+		val responseData = response.jsonObject["data"]?.jsonObject?.get(query.name)
+		return responseData?.let {
+			json.decodeFromJsonElement(it)
+		}
 	}
 }
 

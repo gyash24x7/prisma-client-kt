@@ -9,7 +9,10 @@ import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.json.*
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonPrimitive
 import net.pearx.kasechange.toCamelCase
 import net.pearx.kasechange.toPascalCase
 import net.pearx.kasechange.toScreamingSnakeCase
@@ -147,19 +150,10 @@ class Codegen(private val config: CodegenConfig) {
 		val name = "${modelName}Client"
 		val className = ClassName(config.packageNameClient, name)
 		val constructorSpec = FunSpec.constructorBuilder()
-			.addParameter(
-				ParameterSpec.builder("prismaClient", PrismaClient::class)
-					.addModifiers(KModifier.PRIVATE)
-					.build()
-			)
+			.addParameter(ParameterSpec.builder("prismaClient", PrismaClient::class).build())
 
 		val classSpec = TypeSpec.classBuilder(className)
-			.addProperty(
-				PropertySpec.builder("prismaClient", PrismaClient::class)
-					.addModifiers(KModifier.PRIVATE)
-					.initializer("prismaClient")
-					.build()
-			)
+			.addProperty(PropertySpec.builder("prismaClient", PrismaClient::class).initializer("prismaClient").build())
 			.primaryConstructor(constructorSpec.build())
 
 		it.entries.filterNot { entry -> entry.key == "model" || entry.value is JsonNull }
@@ -181,7 +175,10 @@ class Codegen(private val config: CodegenConfig) {
 
 	private fun generateOperationFun(operation: SchemaField, modelName: String): FunSpec {
 		val operationName = getOperationName(operation, modelName)
-		val funSpec = FunSpec.builder(operationName).addModifiers(KModifier.SUSPEND)
+		val typeVariable = TypeVariableName("T").copy(reified = true)
+		val funSpec = FunSpec.builder(operationName).addModifiers(KModifier.SUSPEND, KModifier.INLINE)
+			.addTypeVariable(typeVariable)
+			.returns(typeVariable.copy(nullable = true))
 
 		operation.args.forEach {
 			var returnType = getType(it.inputType!!.location, it.inputType!!.type)
@@ -219,8 +216,7 @@ class Codegen(private val config: CodegenConfig) {
 			Query::class
 		)
 
-		funSpec.returns(JsonElement::class.asTypeName().copy(nullable = true))
-			.addStatement("return prismaClient.execute(query)")
+		funSpec.addStatement("return prismaClient.execute(query)")
 
 		return funSpec.build()
 	}
